@@ -90,4 +90,24 @@ export const migrations: string[] = [
     INSERT INTO books_fts (books_fts, rowid, title, author, style, publisher) VALUES ('delete', old.id, old.title, old.author, old.style, old.publisher);
     INSERT INTO books_fts (rowid, title, author, style, publisher) VALUES (new.id, new.title, new.author, new.style, new.publisher);
   END;`,
+
+  // 5 : conversations du chat (contenu des messages stocké tel que renvoyé par l'API)
+  `CREATE TABLE chat_conversations (
+    id         INTEGER PRIMARY KEY,
+    title      TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE TABLE chat_messages (
+    id                 INTEGER PRIMARY KEY,
+    conversation_id    INTEGER NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
+    role               TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+    content            TEXT NOT NULL,
+    input_tokens       INTEGER NOT NULL DEFAULT 0,
+    output_tokens      INTEGER NOT NULL DEFAULT 0,
+    cache_read_tokens  INTEGER NOT NULL DEFAULT 0,
+    cache_write_tokens INTEGER NOT NULL DEFAULT 0,
+    created_at         TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX chat_messages_conversation ON chat_messages(conversation_id, id);`,
 ];
