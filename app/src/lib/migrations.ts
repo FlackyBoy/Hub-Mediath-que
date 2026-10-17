@@ -10,4 +10,31 @@ export const migrations: string[] = [
     user_agent TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );`,
+
+  // 2 : analyse de l'espace disque
+  `CREATE TABLE disk_scan (
+    id          INTEGER PRIMARY KEY CHECK (id = 1),
+    status      TEXT NOT NULL,
+    started_at  TEXT,
+    finished_at TEXT,
+    error       TEXT,
+    files       INTEGER,
+    size        INTEGER
+  );
+  CREATE TABLE dir_sizes (
+    rel   TEXT PRIMARY KEY,
+    size  INTEGER NOT NULL,
+    files INTEGER NOT NULL
+  );
+  CREATE TABLE disk_types (
+    kind  TEXT PRIMARY KEY,
+    size  INTEGER NOT NULL,
+    files INTEGER NOT NULL
+  );
+  CREATE TABLE disk_files_top (
+    rel   TEXT PRIMARY KEY,
+    size  INTEGER NOT NULL,
+    mtime INTEGER NOT NULL,
+    kind  TEXT NOT NULL
+  );`,
 ];

@@ -9,7 +9,7 @@ import { migrations } from "./migrations";
 const globalForDb = globalThis as unknown as { hubDb?: DatabaseSync };
 
 function databasePath(): string {
-  return process.env.DATABASE_PATH ?? path.resolve(process.cwd(), "..", "data", "hub.sqlite");
+  return process.env.DATABASE_PATH ?? path.resolve(/* turbopackIgnore: true */ process.cwd(), "..", "data", "hub.sqlite");
 }
 
 function migrate(db: DatabaseSync) {
