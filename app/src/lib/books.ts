@@ -78,10 +78,11 @@ export function inferType(style: string): BookType {
   if (/\bbd\b|bande dessin/.test(s)) return "bd";
   if (/manga|manhwa/.test(s)) return "manga";
   if (/comics?\b/.test(s)) return "comics";
-  if (/théâtre|theatre|tragédie|comédie/.test(s)) return "theatre";
+  // "tragicomédie" désigne aussi des romans : seuls tragédie / comédie en début de mot comptent
+  if (/théâtre|theatre|(^|\s)(tragédie|comédie)/.test(s)) return "theatre";
   if (/nouvelle/.test(s)) return "nouvelles";
   if (/photograph|beau livre|\bart\b/.test(s)) return "beau_livre";
-  if (/roman|romance|polar|thriller|sf\b|science-fiction|fantasy|fantastique|dystopie|aventure|western|noir|policier|satire|épopée|fresque|horreur/.test(s)) return "roman";
+  if (/roman|romance|polar|thriller|sf\b|science-fiction|fantasy|fantastique|dystopie|aventure|western|noir|policier|satire|épopée|fresque|horreur|zombie|conte|fiction|tragicom/.test(s)) return "roman";
   if (/essai|témoignage|scientifique|biograph|histoire|philosoph|jeux de langue|document|récit vrai/.test(s)) return "essai";
   return "roman";
 }

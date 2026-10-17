@@ -225,8 +225,18 @@ export async function bestMatch(title: string, author: string): Promise<Match | 
     }
   };
 
-  // Recherche libre : retrouve aussi les traductions (La Route -> The Road, édition française)
-  consider(await searchOpenLibrary({ q: `${mainTitle} ${author}`.trim() }, 5));
+  // Recherche libre : retrouve aussi les traductions (La Route -> The Road, édition française).
+  // Open Library exige tous les mots : on ne garde que le premier auteur ("A & B" -> "A"),
+  // puis on élargit (titre seul, puis titre avant les deux-points) tant que rien de fiable.
+  const firstAuthor = author.split(/\s*(?:&|,|\/|\bet\b|\band\b)\s*/i)[0].trim();
+  const shortTitle = mainTitle.split(/\s*:\s*/)[0];
+  const queries = [`${mainTitle} ${firstAuthor}`.trim(), mainTitle, shortTitle !== mainTitle ? `${shortTitle} ${firstAuthor}`.trim() : null];
+  for (const q of queries) {
+    if (!q) continue;
+    consider(await searchOpenLibrary({ q }, 5));
+    const found = best as Match | null;
+    if (found && found.confidence >= 0.75 && found.candidate.coverUrl) break;
+  }
   const current = best as Match | null;
   if (!current || current.confidence < 0.75 || !current.candidate.coverUrl) {
     const q = `intitle:"${mainTitle}"${author ? ` inauthor:"${author}"` : ""}`;
