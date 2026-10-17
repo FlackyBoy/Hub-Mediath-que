@@ -4,9 +4,20 @@ import { stat } from "node:fs/promises";
 import { requireSession } from "@/lib/auth";
 import { getDirSizes, recordDeletion, recordRename, startScan } from "@/lib/disk";
 import { deleteEntry, fsErrorMessage, renameEntry, resolvePath } from "@/lib/files";
+import { eraseTorrent, listTorrents, type Torrent } from "@/lib/rtorrent";
 
 export type RenameResult = { ok: true; rel: string } | { ok: false; error: string };
-export type DeleteResult = { deleted: number; freed: number; errors: string[] };
+export type DeleteResult = { deleted: number; freed: number; errors: string[]; torrents: number };
+
+// Torrents dont les données recouvrent le chemin supprimé (dossier parent ou fichier contenu)
+function overlapping(torrents: Torrent[], abs: string): Torrent[] {
+  const norm = (p: string) => p.replace(/\\/g, "/").replace(/\/+$/, "");
+  const target = norm(abs);
+  return torrents.filter((t) => {
+    const base = norm(t.basePath);
+    return base && (base === target || base.startsWith(target + "/") || target.startsWith(base + "/"));
+  });
+}
 
 export async function renameAction(rel: string, newName: string): Promise<RenameResult> {
   await requireSession();
@@ -25,7 +36,11 @@ export async function deleteAction(rels: string[]): Promise<DeleteResult> {
   const unique = [...new Set(rels)].sort();
   const targets = unique.filter((rel) => !unique.some((other) => rel.startsWith(other + "/")));
 
-  const result: DeleteResult = { deleted: 0, freed: 0, errors: [] };
+  // Si rTorrent est indisponible, on supprime quand même les fichiers
+  const torrents = await listTorrents().catch(() => [] as Torrent[]);
+  const erased = new Set<string>();
+
+  const result: DeleteResult = { deleted: 0, freed: 0, errors: [], torrents: 0 };
   for (const rel of targets) {
     const name = rel.split("/").pop();
     try {
@@ -38,6 +53,12 @@ export async function deleteAction(rels: string[]): Promise<DeleteResult> {
         size = known?.size ?? 0;
         files = known?.files ?? 0;
       }
+      // Retire d'abord les torrents concernés pour éviter qu'ils passent en erreur
+      for (const t of overlapping(torrents, abs)) {
+        if (erased.has(t.hash)) continue;
+        await eraseTorrent(t.hash);
+        erased.add(t.hash);
+      }
       await deleteEntry(rel);
       recordDeletion(rel, size, files);
       result.deleted++;
@@ -46,6 +67,7 @@ export async function deleteAction(rels: string[]): Promise<DeleteResult> {
       result.errors.push(`${name} : ${fsErrorMessage(error)}`);
     }
   }
+  result.torrents = erased.size;
   return result;
 }
 

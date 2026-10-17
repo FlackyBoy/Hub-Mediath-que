@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DiskMeter } from "@/components/disk-charts";
-import { ChevronRightIcon, FolderIcon, RefreshIcon } from "@/components/icons";
-import { ComingSoon, PageHeader } from "@/components/page-header";
+import { ChevronRightIcon, DownloadIcon, FolderIcon, RefreshIcon, SearchIcon } from "@/components/icons";
+import { PageHeader } from "@/components/page-header";
 import { diskUsage, getScanInfo } from "@/lib/disk";
 import { formatRelative } from "@/lib/format";
 
@@ -42,12 +42,17 @@ export default async function MediathequePage() {
           text={`Par dossier et par type · analyse ${formatRelative(scan.finishedAt)}`}
           icon={<RefreshIcon className="size-6" />}
         />
-        <ComingSoon
-          items={[
-            "Recherche Prowlarr : films, séries, autres",
-            "Envoi vers rTorrent et suivi des téléchargements",
-            "Notification quand un téléchargement est terminé",
-          ]}
+        <NavCard
+          href="/mediatheque/recherche"
+          title="Recherche"
+          text="Films, séries et autres via Prowlarr"
+          icon={<SearchIcon className="size-6" />}
+        />
+        <NavCard
+          href="/mediatheque/telechargements"
+          title="Téléchargements"
+          text="Suivi, pause, suppression"
+          icon={<DownloadIcon className="size-6" />}
         />
       </div>
     </>

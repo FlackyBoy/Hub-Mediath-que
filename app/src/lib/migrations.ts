@@ -37,4 +37,19 @@ export const migrations: string[] = [
     mtime INTEGER NOT NULL,
     kind  TEXT NOT NULL
   );`,
+
+  // 3 : réglages et téléchargements lancés depuis le Hub
+  `CREATE TABLE settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
+  CREATE TABLE downloads (
+    hash         TEXT PRIMARY KEY,
+    name         TEXT NOT NULL,
+    category     TEXT NOT NULL,
+    dest         TEXT NOT NULL,
+    added_at     TEXT NOT NULL DEFAULT (datetime('now')),
+    completed_at TEXT,
+    notified     INTEGER NOT NULL DEFAULT 0
+  );`,
 ];

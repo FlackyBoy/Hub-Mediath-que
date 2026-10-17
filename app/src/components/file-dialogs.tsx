@@ -17,7 +17,6 @@ export function DeleteDialog({
   const [pending, setPending] = useState(false);
   const known = entries.reduce((sum, e) => sum + (e.size ?? 0), 0);
   const hasUnknown = entries.some((e) => e.size === null);
-  const hasDir = entries.some((e) => e.kind === "dir");
 
   async function confirm() {
     setPending(true);
@@ -46,7 +45,7 @@ export function DeleteDialog({
       )}
       <p className="mb-5 text-sm text-danger">
         Suppression définitive, impossible à annuler.
-        {hasDir && " Si un torrent utilise ces fichiers, il passera en erreur dans ruTorrent."}
+        {" Les torrents qui utilisent ces fichiers seront retirés de rTorrent."}
       </p>
       <div className="grid grid-cols-2 gap-2">
         <button className={btn.ghost} onClick={onClose} disabled={pending}>
@@ -119,6 +118,9 @@ export function deleteSummary(result: DeleteResult): string {
       `${result.deleted} élément${result.deleted > 1 ? "s" : ""} supprimé${result.deleted > 1 ? "s" : ""}` +
         (result.freed > 0 ? ` (${formatBytesClient(result.freed)} libérés)` : ""),
     );
+  }
+  if (result.torrents > 0) {
+    parts.push(`${result.torrents} torrent${result.torrents > 1 ? "s" : ""} retiré${result.torrents > 1 ? "s" : ""} de rTorrent`);
   }
   if (result.errors.length > 0) parts.push(`Échec : ${result.errors.join(" ; ")}`);
   return parts.join(". ");
