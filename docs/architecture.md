@@ -61,9 +61,11 @@ L'app tourne en `network_mode: host` pour joindre rTorrent et Plex, qui n'écout
 
 ## Installation serveur
 
-Ubuntu 16.04 n'est plus supporté par les paquets Docker récents. Deux options, à trancher au déploiement :
+Ubuntu 16.04 n'est plus supporté par les paquets Docker récents (`xenial` plafonne à 20.10.7, incompatible seccomp avec les images récentes). Choix retenu :
 
-- paquets `xenial` (Docker 20.10 maximum) : risque d'incompatibilité seccomp avec les images récentes ;
-- binaires statiques officiels de Docker (récents, indépendants de la distribution).
+- **Docker 29.9.1** en binaires statiques officiels dans `/usr/local/bin`, service `docker.service` dédié, Compose v5.6.0 en plugin. Sans apt, désinstallable avec `deploy/uninstall-docker.sh`. Build via le builder classique (pas de buildx).
+- **Tailscale 1.104.1** (paquet .deb, dépôt apt retiré après installation), lancé avec `--accept-dns=false` pour ne pas toucher au DNS du serveur (bind9 local).
+- `tailscale serve --bg 3100` publie l'app en HTTPS (certificat Tailscale) sur `https://hub.tail675021.ts.net`, réseau Tailscale uniquement.
+- `apt-get update` bloque sur ce serveur (anciens dépôts) : ne pas l'utiliser.
 
-L'image de l'app est basée sur Alpine (musl) pour limiter ces problèmes. Les commandes exactes seront validées avant exécution.
+L'image de l'app est basée sur Alpine (musl).
