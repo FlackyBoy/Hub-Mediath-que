@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookIcon, ChatIcon, FilmIcon, HomeIcon, SettingsIcon } from "./icons";
+import { BookIcon, ChatIcon, FilmIcon, GaugeIcon, SettingsIcon } from "./icons";
 
+// "match" : préfixes d'URL qui activent l'onglet
 const items = [
-  { href: "/", label: "Accueil", Icon: HomeIcon },
-  { href: "/mediatheque", label: "Médias", Icon: FilmIcon },
-  { href: "/bibliotheque", label: "Livres", Icon: BookIcon },
-  { href: "/chat", label: "Chat", Icon: ChatIcon },
-  { href: "/reglages", label: "Réglages", Icon: SettingsIcon },
+  { href: "/", label: "Tableau", Icon: GaugeIcon, match: ["/fichiers", "/espace"] },
+  { href: "/mediatheque", label: "Médias", Icon: FilmIcon, match: [] },
+  { href: "/bibliotheque", label: "Livres", Icon: BookIcon, match: [] },
+  { href: "/chat", label: "Chat", Icon: ChatIcon, match: [] },
+  { href: "/reglages", label: "Réglages", Icon: SettingsIcon, match: [] },
 ];
 
 export function BottomNav() {
@@ -18,8 +19,9 @@ export function BottomNav() {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
       <ul className="mx-auto flex max-w-2xl">
-        {items.map(({ href, label, Icon }) => {
-          const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+        {items.map(({ href, label, Icon, match }) => {
+          const active =
+            (href === "/" ? pathname === "/" : pathname.startsWith(href)) || match.some((m) => pathname.startsWith(m));
           return (
             <li key={href} className="flex-1">
               <Link

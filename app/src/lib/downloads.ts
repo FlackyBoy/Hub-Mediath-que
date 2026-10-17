@@ -81,7 +81,7 @@ async function checkCompleted() {
     if (!t.complete) continue;
     db.prepare("UPDATE downloads SET notified = 1, completed_at = datetime('now') WHERE hash = ?").run(d.hash);
     try {
-      await sendPushToAll({ title: "Téléchargement terminé", body: t.name, url: "/mediatheque/telechargements" });
+      await sendPushToAll({ title: "Téléchargement terminé", body: t.name, url: "/mediatheque" });
     } catch (error) {
       console.error("Notification de fin de téléchargement non envoyée", error);
     }

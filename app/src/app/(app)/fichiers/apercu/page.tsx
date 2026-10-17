@@ -27,7 +27,7 @@ async function readStart(abs: string): Promise<string> {
   }
 }
 
-export default async function ApercuPage({ searchParams }: PageProps<"/mediatheque/fichiers/apercu">) {
+export default async function ApercuPage({ searchParams }: PageProps<"/fichiers/apercu">) {
   const params = await searchParams;
   const rel = typeof params.p === "string" ? params.p : "";
 

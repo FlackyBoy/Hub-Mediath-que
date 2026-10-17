@@ -42,8 +42,8 @@ export default async function EspacePage() {
   return (
     <>
       <nav className="mb-3 text-sm">
-        <Link href="/mediatheque" className="text-accent">
-          Médiathèque
+        <Link href="/" className="text-accent">
+          Tableau de bord
         </Link>
       </nav>
       <h1 className="mb-4 text-2xl font-bold tracking-tight">Espace disque</h1>

@@ -12,11 +12,11 @@ export type ViewEntry = {
 };
 
 export function filesHref(rel: string): string {
-  return rel ? `/mediatheque/fichiers?p=${encodeURIComponent(rel)}` : "/mediatheque/fichiers";
+  return rel ? `/fichiers?p=${encodeURIComponent(rel)}` : "/fichiers";
 }
 
 export function previewHref(rel: string): string {
-  return `/mediatheque/fichiers/apercu?p=${encodeURIComponent(rel)}`;
+  return `/fichiers/apercu?p=${encodeURIComponent(rel)}`;
 }
 
 export function rawHref(rel: string, download = false): string {

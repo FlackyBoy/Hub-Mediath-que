@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { startScanAction } from "@/app/(app)/mediatheque/actions";
+import { startScanAction } from "@/app/(app)/fichiers/actions";
 import { RefreshIcon } from "./icons";
 
 // Lance l'analyse du disque et rafraîchit la page tant qu'elle tourne.

@@ -15,7 +15,7 @@ const SORTS: { key: SortKey; label: string }[] = [
   { key: "date", label: "Date" },
 ];
 
-export default async function FichiersPage({ searchParams }: PageProps<"/mediatheque/fichiers">) {
+export default async function FichiersPage({ searchParams }: PageProps<"/fichiers">) {
   const params = await searchParams;
   const rel = typeof params.p === "string" ? params.p : "";
   const sort = parseSort(params.tri);

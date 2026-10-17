@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { deleteAction, renameAction, type DeleteResult } from "@/app/(app)/mediatheque/actions";
+import { deleteAction, renameAction, type DeleteResult } from "@/app/(app)/fichiers/actions";
 import { formatBytes as formatBytesClient, type ViewEntry } from "@/lib/media-links";
 import { btn, Modal } from "./modal";
 

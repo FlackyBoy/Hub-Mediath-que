@@ -47,7 +47,7 @@ export default async function RecherchePage({ searchParams }: PageProps<"/mediat
     <>
       <nav className="mb-3 text-sm">
         <Link href="/mediatheque" className="text-accent">
-          Médiathèque
+          Médias
         </Link>
       </nav>
       <h1 className="mb-4 text-2xl font-bold tracking-tight">Recherche</h1>

@@ -53,7 +53,7 @@ export function SearchResults({ results, defaults }: { results: ResultView[]; de
       {notice && (
         <p role="status" className="mb-3 rounded-xl border border-border bg-surface p-3 text-sm">
           {notice}{" "}
-          <Link href="/mediatheque/telechargements" className="font-medium text-accent">
+          <Link href="/mediatheque" className="font-medium text-accent">
             Voir les téléchargements
           </Link>
         </p>

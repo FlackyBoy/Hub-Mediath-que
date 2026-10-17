@@ -28,6 +28,16 @@ export function HomeIcon(props: IconProps) {
   );
 }
 
+export function GaugeIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4 18a9 9 0 1 1 16 0" />
+      <path d="m12 14 4-5" />
+      <circle cx="12" cy="14" r="1.2" fill="currentColor" />
+    </Svg>
+  );
+}
+
 export function FilmIcon(props: IconProps) {
   return (
     <Svg {...props}>
