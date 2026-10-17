@@ -1,0 +1,4 @@
+# Fins de ligne Unix dans le repo (déploiement sur Linux)
+* text=auto eol=lf
+*.png binary
+*.ico binary

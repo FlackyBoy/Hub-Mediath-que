@@ -33,7 +33,23 @@ L'app tourne en `network_mode: host` pour joindre rTorrent et Plex, qui n'écout
 - Un seul utilisateur, quelques milliers de lignes : un serveur Postgres n'apporterait rien et consommerait de la RAM.
 - Sauvegarde = copier `data/hub.sqlite`.
 - Recherche plein texte native (FTS5) pour la bibliothèque.
-- Accès via Drizzle ORM : migration vers Postgres possible plus tard sans réécrire les requêtes.
+- Module `node:sqlite` intégré à Node 24 : aucun module natif à compiler (ni sur Windows, ni dans Docker).
+- Migrations : tableau SQL dans `app/src/lib/migrations.ts`, version suivie par `PRAGMA user_version`, appliquées au démarrage.
+
+## Authentification
+
+- Un seul compte : `AUTH_USERNAME` + `AUTH_PASSWORD_HASH` (scrypt) dans `.env`.
+- Cookie `hub_session` signé HMAC (`SESSION_SECRET`), `HttpOnly`, `Secure` en production, 30 jours.
+- `src/proxy.ts` redirige vers `/login` ; chaque page et Server Action revérifie la session (`requireSession`).
+- 5 échecs de connexion consécutifs bloquent 15 minutes.
+- Changer `SESSION_SECRET` déconnecte tous les appareils.
+
+## PWA et notifications
+
+- `src/app/manifest.ts` + icônes dans `public/icons/` et `src/app/apple-icon.png`.
+- `public/sw.js` : notifications push et ouverture de l'app au clic.
+- Abonnements stockés dans la table `push_subscriptions` ; `sendPushToAll()` dans `src/lib/push.ts`.
+- Sur iPhone : iOS 16.4 minimum, app installée sur l'écran d'accueil, HTTPS (fourni par `tailscale serve`).
 
 ## Modules
 
@@ -45,4 +61,9 @@ L'app tourne en `network_mode: host` pour joindre rTorrent et Plex, qui n'écout
 
 ## Installation serveur
 
-Ubuntu 16.04 n'est plus supporté par les versions récentes de Docker : on installe la dernière version publiée pour 16.04 (`xenial`), plus le plugin Compose v2. Les commandes exactes seront fournies et validées au moment du déploiement.
+Ubuntu 16.04 n'est plus supporté par les paquets Docker récents. Deux options, à trancher au déploiement :
+
+- paquets `xenial` (Docker 20.10 maximum) : risque d'incompatibilité seccomp avec les images récentes ;
+- binaires statiques officiels de Docker (récents, indépendants de la distribution).
+
+L'image de l'app est basée sur Alpine (musl) pour limiter ces problèmes. Les commandes exactes seront validées avant exécution.
