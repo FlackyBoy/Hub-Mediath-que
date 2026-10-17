@@ -1,0 +1,36 @@
+name: hub
+
+services:
+  app:
+    build: ./app
+    container_name: hub-app
+    restart: unless-stopped
+    # Réseau de l'hôte : accès direct à rTorrent (127.0.0.1:41758), Plex et Prowlarr
+    # sans les exposer. L'app écoute uniquement sur 127.0.0.1.
+    network_mode: host
+    env_file: .env
+    environment:
+      HOSTNAME: 127.0.0.1
+      PORT: ${APP_PORT:-3100}
+      DATABASE_PATH: /data/hub.sqlite
+    user: "${PUID:-1000}:${PGID:-1000}"
+    volumes:
+      - ./data:/data
+      # Même chemin dedans et dehors : les chemins rTorrent restent valides
+      - ${MEDIA_ROOT:-/home/viou}:${MEDIA_ROOT:-/home/viou}
+    depends_on:
+      - prowlarr
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: hub-prowlarr
+    restart: unless-stopped
+    environment:
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      TZ: ${TZ:-Europe/Paris}
+    volumes:
+      - ./data/prowlarr:/config
+    ports:
+      # Local uniquement : interface accessible via tunnel SSH ou Tailscale
+      - "127.0.0.1:9696:9696"

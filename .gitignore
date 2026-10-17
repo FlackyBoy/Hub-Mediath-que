@@ -1,0 +1,28 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Données locales (base, config Prowlarr, imports CSV)
+data/*
+!data/.gitkeep
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+build/
+*.tsbuildinfo
+next-env.d.ts
+npm-debug.log*
+
+# Divers
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+coverage/
