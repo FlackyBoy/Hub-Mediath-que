@@ -52,4 +52,42 @@ export const migrations: string[] = [
     completed_at TEXT,
     notified     INTEGER NOT NULL DEFAULT 0
   );`,
+
+  // 4 : bibliothèque (livres + recherche plein texte sans accents)
+  `CREATE TABLE books (
+    id          INTEGER PRIMARY KEY,
+    title       TEXT NOT NULL,
+    author      TEXT NOT NULL DEFAULT '',
+    rating      INTEGER CHECK (rating BETWEEN 0 AND 10),
+    status      TEXT NOT NULL DEFAULT 'a_lire' CHECK (status IN ('a_lire', 'en_cours', 'lu', 'abandonne')),
+    type        TEXT NOT NULL DEFAULT 'roman',
+    style       TEXT NOT NULL DEFAULT '',
+    summary     TEXT NOT NULL DEFAULT '',
+    pros        TEXT NOT NULL DEFAULT '',
+    cons        TEXT NOT NULL DEFAULT '',
+    notes       TEXT NOT NULL DEFAULT '',
+    publisher   TEXT NOT NULL DEFAULT '',
+    year        INTEGER,
+    pages       INTEGER,
+    isbn        TEXT NOT NULL DEFAULT '',
+    cover       TEXT NOT NULL DEFAULT 'pending' CHECK (cover IN ('pending', 'ok', 'doubtful', 'missing')),
+    meta_source TEXT NOT NULL DEFAULT '',
+    created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX books_author ON books(author);
+  CREATE VIRTUAL TABLE books_fts USING fts5(
+    title, author, style, publisher,
+    content = 'books', content_rowid = 'id', tokenize = 'unicode61 remove_diacritics 2'
+  );
+  CREATE TRIGGER books_ai AFTER INSERT ON books BEGIN
+    INSERT INTO books_fts (rowid, title, author, style, publisher) VALUES (new.id, new.title, new.author, new.style, new.publisher);
+  END;
+  CREATE TRIGGER books_ad AFTER DELETE ON books BEGIN
+    INSERT INTO books_fts (books_fts, rowid, title, author, style, publisher) VALUES ('delete', old.id, old.title, old.author, old.style, old.publisher);
+  END;
+  CREATE TRIGGER books_au AFTER UPDATE ON books BEGIN
+    INSERT INTO books_fts (books_fts, rowid, title, author, style, publisher) VALUES ('delete', old.id, old.title, old.author, old.style, old.publisher);
+    INSERT INTO books_fts (rowid, title, author, style, publisher) VALUES (new.id, new.title, new.author, new.style, new.publisher);
+  END;`,
 ];

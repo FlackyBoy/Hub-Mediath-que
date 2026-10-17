@@ -7,6 +7,10 @@ const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
   serverExternalPackages: ["web-push"],
+  experimental: {
+    // Photos de couverture prises à l'iPhone et import CSV de la bibliothèque
+    serverActions: { bodySizeLimit: "12mb" },
+  },
   turbopack: {
     rules: {
       "*.css": {
