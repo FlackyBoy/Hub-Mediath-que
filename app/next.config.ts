@@ -1,10 +1,7 @@
-import path from "node:path";
-import { loadEnvConfig } from "@next/env";
 import type { NextConfig } from "next";
 
-// En dev, le .env est à la racine du repo (partagé avec docker compose).
-// En production, les variables viennent de docker compose (env_file).
-loadEnvConfig(path.resolve(process.cwd(), ".."));
+// Variables d'environnement : en dev, le script "dev" charge ../.env (partagé avec
+// docker compose) ; en production, elles viennent de docker compose (env_file).
 
 const nextConfig: NextConfig = {
   output: "standalone",
