@@ -90,6 +90,26 @@ bash deploy/set-password.sh        # changer le mot de passe du Hub
 sudo tailscale serve status        # vérifier l'accès HTTPS
 ```
 
+### Sauvegardes
+
+Chaque nuit vers 4 h, l'app crée `data/backups/hub-AAAA-MM-JJ-HHMM.tar.gz` (copie vérifiée de la base + couvertures) et garde les 10 dernières. Téléchargement et sauvegarde immédiate : **⚙ Réglages > Sauvegardes**.
+
+Restaurer (sur le serveur) :
+
+```bash
+cd ~/hub
+bash deploy/restore-backup.sh                                       # liste les sauvegardes
+bash deploy/restore-backup.sh data/backups/hub-AAAA-MM-JJ-HHMM.tar.gz
+```
+
+L'état actuel est d'abord mis de côté dans `data/backups/avant-restauration-<date>/`.
+
+Restaurer une sauvegarde téléchargée sur le PC : l'envoyer d'abord sur le serveur.
+
+```powershell
+scp -P 4747 .\hub-AAAA-MM-JJ-HHMM.tar.gz viou@37.187.12.102:hub/data/backups/
+```
+
 ### Installer sur l'iPhone
 
 Tailscale activé, ouvrir l'adresse dans **Safari**, se connecter, puis **Partager > Sur l'écran d'accueil**. Ouvrir depuis l'icône, puis **Réglages > Activer les notifications**.

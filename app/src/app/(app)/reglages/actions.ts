@@ -3,6 +3,7 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth";
+import { createBackup } from "@/lib/backup";
 import { deleteSubscription, saveSubscription, sendPushToAll } from "@/lib/push";
 import { SESSION_COOKIE } from "@/lib/session";
 
@@ -34,6 +35,16 @@ export async function sendTestPush(): Promise<{ sent: number; error?: string }> 
     return { sent };
   } catch (error) {
     return { sent: 0, error: (error as Error).message };
+  }
+}
+
+export async function createBackupAction(): Promise<{ name: string; size: number } | { error: string }> {
+  await requireSession();
+  try {
+    const b = await createBackup();
+    return { name: b.name, size: b.size };
+  } catch (error) {
+    return { error: (error as Error).message };
   }
 }
 

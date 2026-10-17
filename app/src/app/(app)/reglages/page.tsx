@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { requireSession } from "@/lib/auth";
+import { lastBackupError, listBackups } from "@/lib/backup";
 import { formatRelative } from "@/lib/format";
+import { Backups } from "./backups";
 import { isPlexConfigured, lastPlexSync } from "@/lib/plex";
 import { isTmdbConfigured } from "@/lib/tmdb";
 import { logout } from "./actions";
@@ -23,6 +25,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export default async function ReglagesPage() {
   const { username } = await requireSession();
   const plexStatus = lastPlexSync();
+  const backups = await listBackups();
 
   return (
     <>
@@ -33,6 +36,16 @@ export default async function ReglagesPage() {
       <div className="space-y-4">
         <Section title="Notifications">
           <PushManager publicKey={process.env.VAPID_PUBLIC_KEY || null} />
+        </Section>
+        <Section title="Sauvegardes">
+          <Backups
+            error={lastBackupError()}
+            backups={backups.map((b) => ({
+              name: b.name,
+              size: b.size,
+              label: new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short", timeZone: process.env.TZ || "Europe/Paris" }).format(new Date(b.createdAt)),
+            }))}
+          />
         </Section>
         <Section title="Plex">
           {isPlexConfigured() ? (
