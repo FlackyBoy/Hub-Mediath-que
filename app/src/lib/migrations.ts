@@ -110,4 +110,36 @@ export const migrations: string[] = [
     created_at         TEXT NOT NULL DEFAULT (datetime('now'))
   );
   CREATE INDEX chat_messages_conversation ON chat_messages(conversation_id, id);`,
+
+  // 6 : films et séries (TMDB), et index de la bibliothèque Plex
+  `CREATE TABLE screens (
+    id             INTEGER PRIMARY KEY,
+    tmdb_id        INTEGER NOT NULL,
+    media_type     TEXT NOT NULL CHECK (media_type IN ('movie', 'tv')),
+    title          TEXT NOT NULL,
+    original_title TEXT NOT NULL DEFAULT '',
+    year           INTEGER,
+    overview       TEXT NOT NULL DEFAULT '',
+    poster_path    TEXT,
+    backdrop_path  TEXT,
+    genres         TEXT NOT NULL DEFAULT '',
+    tmdb_rating    REAL,
+    status         TEXT NOT NULL CHECK (status IN ('a_voir', 'en_cours', 'vu', 'abandonne', 'pas_interesse')),
+    rating         INTEGER CHECK (rating BETWEEN 0 AND 10),
+    notes          TEXT NOT NULL DEFAULT '',
+    source         TEXT NOT NULL DEFAULT 'manuel',
+    watched_at     TEXT,
+    created_at     TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at     TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (tmdb_id, media_type)
+  );
+  CREATE INDEX screens_status ON screens(status);
+  CREATE TABLE plex_library (
+    tmdb_id    INTEGER NOT NULL,
+    media_type TEXT NOT NULL,
+    title      TEXT NOT NULL,
+    viewed     INTEGER NOT NULL DEFAULT 0,
+    progress   REAL NOT NULL DEFAULT 0,
+    PRIMARY KEY (tmdb_id, media_type)
+  );`,
 ];

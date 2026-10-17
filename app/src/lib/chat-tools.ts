@@ -6,6 +6,9 @@ import { getDb } from "./db";
 import { diskUsage, getCategoryFolders, getScanInfo, getTypeBreakdown } from "./disk";
 import { KIND_LABELS } from "./files";
 import { listTorrents } from "./rtorrent";
+import { MEDIA_LABELS, SCREEN_STATUS_LABELS } from "./screen-labels";
+import { listScreens, plexKeys, type Screen } from "./screens";
+import { getDetails, isTmdbConfigured, searchScreens } from "./tmdb";
 
 // Outils du chat : lecture seule sur la bibliothèque, le disque et rTorrent.
 // Claude interroge ce dont il a besoin au lieu de recevoir toute la base dans le prompt.
@@ -56,6 +59,20 @@ const schemas = {
     state: z.enum(["active", "done", "all"]).optional(),
     limit: z.number().int().min(1).max(100).optional(),
   }),
+  search_screens: z.object({
+    query: z.string().max(200).optional(),
+    type: z.enum(["movie", "tv"]).optional(),
+    status: z.enum(["a_voir", "en_cours", "vu", "abandonne", "pas_interesse"]).optional(),
+    genre: z.string().max(100).optional(),
+    min_rating: z.number().int().min(0).max(10).optional(),
+    limit: z.number().int().min(1).max(100).optional(),
+  }),
+  get_rated_screens: z.object({
+    order: z.enum(["best", "worst"]).optional(),
+    type: z.enum(["movie", "tv"]).optional(),
+    limit: z.number().int().min(1).max(60).optional(),
+  }),
+  tmdb_lookup: z.object({ query: z.string().min(1).max(200) }),
 };
 
 export type ToolName = keyof typeof schemas;
@@ -134,6 +151,35 @@ export const CHAT_TOOLS: Anthropic.Beta.BetaTool[] = [
     input_schema: obj({ state: { type: "string", enum: ["active", "done", "all"] }, limit: { type: "integer", minimum: 1, maximum: 100 } }),
     eager_input_streaming: true,
   },
+  {
+    name: "search_screens",
+    description:
+      "Films et séries de la liste de l'utilisateur (onglet Écrans). Statuts : a_voir, en_cours, vu, abandonne, pas_interesse (rejeté au swipe : à ne pas recommander). " +
+      "Indique aussi si le titre est sur son serveur Plex.",
+    input_schema: obj({
+      query: { type: "string", description: "Titre (partiel)" },
+      type: { type: "string", enum: ["movie", "tv"], description: "movie = film, tv = série" },
+      status: { type: "string", enum: ["a_voir", "en_cours", "vu", "abandonne", "pas_interesse"] },
+      genre: { type: "string", description: "Genre (partiel), ex. Science-Fiction, Drame" },
+      min_rating: { type: "integer", minimum: 0, maximum: 10 },
+      limit: { type: "integer", minimum: 1, maximum: 100 },
+    }),
+    eager_input_streaming: true,
+  },
+  {
+    name: "get_rated_screens",
+    description: "Films et séries notés par l'utilisateur, avec son avis : pour cerner ses goûts à l'écran. order=best (défaut) ou worst.",
+    input_schema: obj({ order: { type: "string", enum: ["best", "worst"] }, type: { type: "string", enum: ["movie", "tv"] }, limit: { type: "integer", minimum: 1, maximum: 60 } }),
+    eager_input_streaming: true,
+  },
+  {
+    name: "tmdb_lookup",
+    description:
+      "Cherche un film ou une série dans TMDB : année, genres, résumé, note publique et plateformes d'abonnement en France. " +
+      "À utiliser pour vérifier un titre avant de le recommander et dire où le regarder.",
+    input_schema: obj({ query: { type: "string", description: "Titre à chercher" } }, ["query"]),
+    eager_input_streaming: true,
+  },
 ];
 
 export const TOOL_LABELS: Record<ToolName, string> = {
@@ -145,7 +191,23 @@ export const TOOL_LABELS: Record<ToolName, string> = {
   find_media: "Recherche dans les fichiers",
   folder_size: "Taille d'un dossier",
   list_downloads: "Lecture des téléchargements",
+  search_screens: "Recherche dans tes films et séries",
+  get_rated_screens: "Analyse de tes notes de films",
+  tmdb_lookup: "Recherche sur TMDB",
 };
+
+function briefScreen(s: Screen, plex: Set<string>) {
+  return {
+    id: s.id,
+    titre: s.title,
+    type: MEDIA_LABELS[s.media_type],
+    annee: s.year ?? undefined,
+    genres: s.genres,
+    statut: SCREEN_STATUS_LABELS[s.status],
+    note: s.rating,
+    sur_plex: plex.has(`${s.tmdb_id}:${s.media_type}`) || undefined,
+  };
+}
 
 async function run(name: ToolName, input: unknown): Promise<unknown> {
   switch (name) {
@@ -264,6 +326,42 @@ async function run(name: ToolName, input: unknown): Promise<unknown> {
           debit_ko_s: t.complete ? undefined : Math.round(t.downRate / 1024),
           termine_le: t.complete && t.finishedAt ? new Date(t.finishedAt).toISOString().slice(0, 10) : undefined,
           ratio: Math.round(t.ratio * 100) / 100,
+        })),
+      };
+    }
+    case "search_screens": {
+      const p = schemas.search_screens.parse(input);
+      const plex = plexKeys();
+      const items = listScreens({ q: p.query, type: p.type, status: p.status, genre: p.genre, minRating: p.min_rating, includeHidden: true });
+      const limit = p.limit ?? 30;
+      return { total: items.length, titres: items.slice(0, limit).map((s) => briefScreen(s, plex)) };
+    }
+    case "get_rated_screens": {
+      const p = schemas.get_rated_screens.parse(input);
+      const plex = plexKeys();
+      const rated = listScreens({ type: p.type, sort: "note", includeHidden: true }).filter((s) => s.rating !== null);
+      const ordered = p.order === "worst" ? [...rated].reverse() : rated;
+      return {
+        total_notes: rated.length,
+        titres: ordered.slice(0, p.limit ?? 30).map((s) => ({ ...briefScreen(s, plex), mon_avis: clip(s.notes, 400) || undefined })),
+      };
+    }
+    case "tmdb_lookup": {
+      const { query } = schemas.tmdb_lookup.parse(input);
+      if (!isTmdbConfigured()) throw new Error("TMDB n'est pas configuré");
+      const hits = (await searchScreens(query)).slice(0, 3);
+      const detailed = await Promise.all(hits.map((h) => getDetails(h.mediaType, h.tmdbId).catch(() => null)));
+      return {
+        resultats: hits.map((h, i) => ({
+          titre: h.title,
+          titre_original: h.originalTitle,
+          type: MEDIA_LABELS[h.mediaType],
+          annee: h.year,
+          genres: h.genres.join(", "),
+          note_tmdb: h.tmdbRating,
+          resume: clip(h.overview, 300),
+          plateformes_fr: detailed[i]?.providers.map((p) => p.name) ?? [],
+          saisons: detailed[i]?.seasons ?? undefined,
         })),
       };
     }

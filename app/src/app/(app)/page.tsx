@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { DiskMeter } from "@/components/disk-charts";
-import { ChevronRightIcon, DownloadIcon, FolderIcon, RefreshIcon } from "@/components/icons";
+import { ChevronRightIcon, DownloadIcon, FolderIcon, RefreshIcon, SettingsIcon } from "@/components/icons";
 import { InstallHint } from "@/components/install-hint";
 import { PageHeader } from "@/components/page-header";
 import { diskUsage, getScanInfo } from "@/lib/disk";
@@ -36,7 +36,12 @@ export default async function DashboardPage() {
 
   return (
     <>
-      <PageHeader title={greeting()} subtitle="Tableau de bord du serveur" />
+      <div className="flex items-start justify-between">
+        <PageHeader title={greeting()} subtitle="Tableau de bord du serveur" />
+        <Link href="/reglages" aria-label="Réglages" className="rounded-xl border border-border p-2 text-muted">
+          <SettingsIcon className="size-5" />
+        </Link>
+      </div>
       <div className="space-y-4">
         <InstallHint />
         {usage && <DiskMeter {...usage} />}

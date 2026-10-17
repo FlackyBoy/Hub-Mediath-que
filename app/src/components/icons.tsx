@@ -28,6 +28,15 @@ export function HomeIcon(props: IconProps) {
   );
 }
 
+export function TvIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="3" y="6" width="18" height="12" rx="2" />
+      <path d="m8 2 4 4 4-4M8 21h8" />
+    </Svg>
+  );
+}
+
 export function GaugeIcon(props: IconProps) {
   return (
     <Svg {...props}>

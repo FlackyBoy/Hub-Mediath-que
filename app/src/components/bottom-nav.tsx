@@ -2,15 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookIcon, ChatIcon, FilmIcon, GaugeIcon, SettingsIcon } from "./icons";
+import { BookIcon, ChatIcon, DownloadIcon, GaugeIcon, TvIcon } from "./icons";
 
-// "match" : préfixes d'URL qui activent l'onglet
+// "match" : préfixes d'URL qui activent l'onglet (Réglages est accessible depuis le Tableau)
 const items = [
-  { href: "/", label: "Tableau", Icon: GaugeIcon, match: ["/fichiers", "/espace"] },
-  { href: "/mediatheque", label: "Médias", Icon: FilmIcon, match: [] },
+  { href: "/", label: "Tableau", Icon: GaugeIcon, match: ["/fichiers", "/espace", "/reglages"] },
+  { href: "/mediatheque", label: "Médias", Icon: DownloadIcon, match: [] },
+  { href: "/ecrans", label: "Écrans", Icon: TvIcon, match: [] },
   { href: "/bibliotheque", label: "Livres", Icon: BookIcon, match: [] },
   { href: "/chat", label: "Chat", Icon: ChatIcon, match: [] },
-  { href: "/reglages", label: "Réglages", Icon: SettingsIcon, match: [] },
 ];
 
 export function BottomNav() {
