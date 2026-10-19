@@ -285,7 +285,11 @@ export function cleanOpenLibraryText(text: string): string {
     .replace(/\(\[[^\]]*\]\[\d+\]\)/g, "") // ([source][1])
     .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1") // [texte](url)
     .replace(/\[([^\]]+)\]\[\d+\]/g, "$1") // [texte][1]
-    .replace(/(\*{1,2}|_{1,2})(\S(?:.*?\S)?)\1/g, "$2") // *italique*, **gras**
+    // **gras** puis *italique* (souvent imbriqués : **Du *New York Times*…**)
+    .replace(/\*\*(?=\S)(.+?)(?<=\S)\*\*/g, "$1")
+    .replace(/(?<!\w)__(?=\S)(.+?)(?<=\S)__(?!\w)/g, "$1")
+    .replace(/\*(?=\S)(.+?)(?<=\S)\*/g, "$1")
+    .replace(/(?<!\w)_(?=\S)(.+?)(?<=\S)_(?!\w)/g, "$1")
     .replace(/[ \t]+\n/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
