@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth";
-import { enrichBook, startEnrichment } from "@/lib/book-enrich";
+import { enrichBook, enrichSummary, startEnrichment } from "@/lib/book-enrich";
 import { importBooksCsv, type ImportResult } from "@/lib/book-import";
 import { isStatus } from "@/lib/book-labels";
 import { lookupIsbn, searchCandidates, type BookCandidate } from "@/lib/book-meta";
@@ -32,8 +32,11 @@ export async function createBookAction(raw: Record<string, unknown>, coverUrl?: 
 export async function updateBookAction(id: number, raw: Record<string, unknown>): Promise<SaveResult> {
   await requireSession();
   try {
-    if (!getBook(id)) return { ok: false, error: "Livre introuvable" };
-    updateBook(id, sanitizeBook(raw));
+    const book = getBook(id);
+    if (!book) return { ok: false, error: "Livre introuvable" };
+    const input = sanitizeBook(raw);
+    // Résumé retouché à la main : il n'est plus attribué à Open Library / Google Books
+    updateBook(id, input.summary !== book.summary ? { ...input, summary_source: "", summary_checked: 1 } : input);
   } catch (error) {
     return { ok: false, error: (error as Error).message };
   }
@@ -111,6 +114,12 @@ export async function retryEnrichAction(id: number): Promise<{ ok: boolean; stat
   if (!book) return { ok: false, state: "missing" };
   // Nouvelle tentative de recherche automatique pour ce livre
   return { ok: true, state: await enrichBook(id) };
+}
+
+export async function findSummaryAction(id: number): Promise<{ ok: boolean; error?: string }> {
+  await requireSession();
+  if (!getBook(id)) return { ok: false, error: "Livre introuvable" };
+  return (await enrichSummary(id)) ? { ok: true } : { ok: false, error: "Aucun résumé trouvé pour ce livre" };
 }
 
 export async function importCsvAction(form: FormData): Promise<ImportResult | { error: string }> {

@@ -3,7 +3,7 @@
 PWA auto-hébergée qui regroupe :
 
 1. **Médiathèque** : explorateur de fichiers, espace disque, recherche Prowlarr, envoi vers rTorrent, suivi et notifications.
-2. **Bibliothèque** : livres et BD, import du tracker Google Sheets, scan ISBN, métadonnées Open Library / Google Books.
+2. **Bibliothèque** : livres et BD, import du tracker Google Sheets, scan ISBN, métadonnées et résumés Open Library / Google Books.
 3. **Chatbot** (optionnel) : questions sur mes données via l'API Claude (tool use).
 
 Usage limité à du contenu que j'ai le droit de télécharger.

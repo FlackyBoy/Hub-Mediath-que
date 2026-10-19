@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { BookCover } from "@/components/book-cover";
 import { TYPE_LABELS } from "@/lib/book-labels";
 import { getBook } from "@/lib/books";
-import { BookActions, NotesEditor, RatingPicker, StatusPicker } from "./book-controls";
+import { BookActions, NotesEditor, RatingPicker, StatusPicker, SummaryBlock } from "./book-controls";
 
 export const metadata: Metadata = { title: "Livre" };
 
@@ -53,7 +53,7 @@ export default async function BookPage({ params }: PageProps<"/bibliotheque/[id]
         <StatusPicker id={book.id} value={book.status} />
         <RatingPicker id={book.id} value={book.rating} />
         <NotesEditor id={book.id} value={book.notes} />
-        <Block title="Résumé" text={book.summary} />
+        <SummaryBlock id={book.id} text={book.summary} source={book.summary_source} />
         <Block title="Pourquoi j'aimerais" text={book.pros} />
         <Block title="Pourquoi je n'aimerais pas" text={book.cons} />
         <BookActions id={book.id} title={book.title} />

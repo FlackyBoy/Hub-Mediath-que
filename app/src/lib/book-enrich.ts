@@ -1,9 +1,10 @@
-import { bestMatch } from "./book-meta";
-import { booksNeedingCover, coverStats, getBook, updateBook, type CoverState } from "./books";
+import { bestMatch, findSummary } from "./book-meta";
+import { booksNeedingCover, coverStats, getBook, nextBookNeedingSummary, updateBook, type CoverState } from "./books";
 import { downloadCover } from "./covers";
 
-// Complète en arrière-plan les livres sans couverture : métadonnées manquantes + image.
-// Un livre à la fois, avec une pause, pour rester raisonnable avec les API publiques.
+// Complète en arrière-plan les livres sans couverture (métadonnées manquantes + image),
+// puis ceux sans résumé. Un livre à la fois, avec une pause, pour rester raisonnable
+// avec les API publiques.
 
 const globalForEnrich = globalThis as unknown as { hubEnrich?: Promise<void> };
 
@@ -47,15 +48,36 @@ export async function enrichBook(id: number): Promise<CoverState> {
   return state;
 }
 
+// Cherche un résumé pour un livre qui n'en a pas ; un résumé existant n'est jamais remplacé
+export async function enrichSummary(id: number): Promise<boolean> {
+  const book = getBook(id);
+  if (!book) return false;
+  if (book.summary) {
+    updateBook(id, { summary_checked: 1 });
+    return true;
+  }
+  const found = await findSummary(book);
+  // Le livre a pu être modifié à la main pendant la recherche
+  if (found && !getBook(id)?.summary) {
+    updateBook(id, { summary: found.text, summary_source: found.source, summary_checked: 1 });
+  } else {
+    updateBook(id, { summary_checked: 1 });
+  }
+  return Boolean(found);
+}
+
 async function run() {
   for (;;) {
-    const next = booksNeedingCover()[0];
-    if (!next) return;
+    const cover = booksNeedingCover()[0]?.id;
+    const summary = cover === undefined ? nextBookNeedingSummary() : null;
+    const id = cover ?? summary;
+    if (id === null) return;
     try {
-      await enrichBook(next.id);
+      if (cover !== undefined) await enrichBook(id);
+      else await enrichSummary(id);
     } catch (error) {
-      console.error("Enrichissement échoué pour le livre", next.id, error);
-      updateBook(next.id, { cover: "missing" });
+      console.error("Enrichissement échoué pour le livre", id, error);
+      updateBook(id, cover !== undefined ? { cover: "missing" } : { summary_checked: 1 });
     }
     await new Promise((r) => setTimeout(r, 400));
   }

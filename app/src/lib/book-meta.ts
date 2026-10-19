@@ -13,6 +13,12 @@ export type BookCandidate = {
   source: "openlibrary" | "googlebooks";
   // Titre de l'œuvre originale (ex. "The Road" pour "La Route"), pour la comparaison
   workTitle?: string;
+  // Open Library : clés de l'œuvre et de l'édition (pour lire leur description)
+  workKey?: string;
+  editionKey?: string;
+  editionLanguages?: string[];
+  // Google Books : 4e de couverture (HTML)
+  description?: string;
 };
 
 const HEADERS = { "User-Agent": "HubPerso/1.0 (bibliotheque personnelle)" };
@@ -27,14 +33,17 @@ async function getJson<T>(url: string): Promise<T | null> {
 }
 
 type OLEdition = {
+  key?: string;
   title?: string;
   cover_i?: number;
   publisher?: string[];
   isbn?: string[];
   publish_date?: string[];
+  language?: string[];
 };
 
 type OLDoc = {
+  key?: string;
   title?: string;
   author_name?: string[];
   first_publish_year?: number;
@@ -63,6 +72,9 @@ function fromOpenLibrary(d: OLDoc): BookCandidate {
     coverUrl: olCover(e?.cover_i) ?? olCover(d.cover_i),
     source: "openlibrary",
     workTitle: d.title,
+    workKey: d.key,
+    editionKey: e?.key,
+    editionLanguages: e?.language,
   };
 }
 
@@ -74,6 +86,7 @@ type GBVolume = {
     publisher?: string;
     publishedDate?: string;
     pageCount?: number;
+    description?: string;
     industryIdentifiers?: { type: string; identifier: string }[];
     imageLinks?: { thumbnail?: string; smallThumbnail?: string };
   };
@@ -92,6 +105,7 @@ function fromGoogleBooks(v: GBVolume): BookCandidate {
     isbn: ids.find((x) => x.type === "ISBN_13")?.identifier ?? ids.find((x) => x.type === "ISBN_10")?.identifier ?? "",
     coverUrl: thumb ? thumb.replace(/^http:/, "https:").replace("&edge=curl", "") : null,
     source: "googlebooks",
+    description: i.description,
   };
 }
 
@@ -206,13 +220,21 @@ export async function lookupIsbn(raw: string): Promise<BookCandidate | null> {
 
 export type Match = { candidate: BookCandidate; confidence: number };
 
+// Ressemblance entre un livre et un candidat (titre surtout, auteur ensuite)
+function matchScore(title: string, author: string, c: BookCandidate): number {
+  // "1984 (Illustré et Annoté)" doit correspondre à "1984"
+  const bare = c.title.replace(/\s*[([][^)\]]*[)\]]/g, "");
+  return (
+    Math.max(similarity(title, c.title), similarity(title, bare), similarity(title, c.workTitle ?? "")) * 0.7 +
+    (author ? similarity(author, c.author) : 0.5) * 0.3
+  );
+}
+
 // Meilleure correspondance pour un livre existant (enrichissement automatique)
 export async function bestMatch(title: string, author: string): Promise<Match | null> {
   // "A / B" : on cherche sur le premier titre
   const mainTitle = title.split(" / ")[0];
-  const score = (c: BookCandidate) =>
-    Math.max(similarity(mainTitle, c.title), similarity(mainTitle, c.workTitle ?? "")) * 0.7 +
-    (author ? similarity(author, c.author) : 0.5) * 0.3;
+  const score = (c: BookCandidate) => matchScore(mainTitle, author, c);
 
   let best: Match | null = null;
   const consider = (list: BookCandidate[]) => {
@@ -243,4 +265,114 @@ export async function bestMatch(title: string, author: string): Promise<Match | 
     consider(await searchGoogleBooks(q, 5));
   }
   return best;
+}
+
+// --- Résumés (4e de couverture) ---
+
+export type Summary = { text: string; source: "openlibrary" | "googlebooks" };
+
+const SUMMARY_MIN = 40;
+const SUMMARY_MAX = 4000;
+
+type OLText = string | { value?: string };
+
+// Description Open Library : Markdown, notes de source et sections annexes à retirer
+export function cleanOpenLibraryText(text: string): string {
+  return text
+    .replace(/\r/g, "")
+    .split(/\n-{3,}/)[0] // "----------" puis "Contains:", "See also:"…
+    .replace(/^\s*\[\d+\]:.*$/gm, "") // [1]: https://…
+    .replace(/\(\[[^\]]*\]\[\d+\]\)/g, "") // ([source][1])
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1") // [texte](url)
+    .replace(/\[([^\]]+)\]\[\d+\]/g, "$1") // [texte][1]
+    .replace(/(\*{1,2}|_{1,2})(\S(?:.*?\S)?)\1/g, "$2") // *italique*, **gras**
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+// Description Google Books : HTML simple
+export function cleanHtmlText(text: string): string {
+  return text
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>\s*<p[^>]*>/gi, "\n\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+// Open Library mélange les langues (une édition d'Astérix décrite en espagnol) :
+// on ne garde qu'un texte où les mots courants du français ou de l'anglais dominent
+const COMMON_WORDS: Record<string, string[]> = {
+  fr: ["le", "les", "des", "est", "une", "dans", "qui", "et", "au", "du", "il", "elle", "pour", "sur", "ne", "pas"],
+  en: ["the", "and", "of", "is", "to", "in", "his", "her", "with", "that", "was", "for", "on", "by"],
+  other: ["el", "los", "las", "del", "y", "con", "por", "una", "su", "der", "die", "und", "di", "che", "het", "een"],
+};
+
+function isFrenchOrEnglish(text: string): boolean {
+  const words = text.toLowerCase().match(/\p{L}+/gu) ?? [];
+  const count = (list: string[]) => words.filter((w) => list.includes(w)).length;
+  const [fr, en, other] = [count(COMMON_WORDS.fr), count(COMMON_WORDS.en), count(COMMON_WORDS.other)];
+  return Math.max(fr, en) > other;
+}
+
+// Coupe à la dernière phrase complète sous la limite
+function truncate(text: string): string {
+  if (text.length <= SUMMARY_MAX) return text;
+  const cut = text.slice(0, SUMMARY_MAX);
+  const end = cut.lastIndexOf(". ");
+  return end > SUMMARY_MAX / 2 ? cut.slice(0, end + 1) : `${cut.trimEnd()}…`;
+}
+
+async function openLibraryDescription(key: string): Promise<string> {
+  const rec = await getJson<{ description?: OLText }>(`https://openlibrary.org${key}.json`);
+  const d = rec?.description;
+  return cleanOpenLibraryText((typeof d === "string" ? d : d?.value) ?? "");
+}
+
+// Résumé d'un livre, par ordre de préférence : description de l'édition (souvent française,
+// mais rare), Google Books (en français la plupart du temps, si la clé est configurée),
+// puis description de l'œuvre sur Open Library (souvent en anglais).
+// Sans ISBN, on ne retient qu'une correspondance fiable pour ne pas afficher le résumé d'un autre livre.
+export async function findSummary(book: { title: string; author: string; isbn: string }): Promise<Summary | null> {
+  const isbn = cleanIsbn(book.isbn);
+  let ol: BookCandidate | undefined;
+  let gb: BookCandidate | undefined;
+  if (isbn.length === 10 || isbn.length === 13) {
+    [ol, gb] = await Promise.all([
+      searchOpenLibrary({ isbn }, 1).then((r) => r[0]),
+      searchGoogleBooks(`isbn:${isbn}`, 1).then((r) => r[0]),
+    ]);
+  }
+  const mainTitle = book.title.split(" / ")[0];
+  if (!ol && !gb) {
+    const match = await bestMatch(book.title, book.author);
+    if (match && match.confidence >= 0.75) {
+      if (match.candidate.source === "openlibrary") ol = match.candidate;
+      else gb = match.candidate;
+    }
+  }
+  if (!gb?.description && process.env.GOOGLE_BOOKS_API_KEY) {
+    const q = `intitle:"${mainTitle}"${book.author ? ` inauthor:"${book.author}"` : ""}`;
+    gb = (await searchGoogleBooks(q, 3)).find((c) => c.description && matchScore(mainTitle, book.author, c) >= 0.75) ?? gb;
+  }
+
+  const usable = (text: string) => text.length >= SUMMARY_MIN && isFrenchOrEnglish(text);
+  if (ol?.editionKey && ol.editionLanguages?.includes("fre")) {
+    const text = await openLibraryDescription(ol.editionKey);
+    if (usable(text)) return { text: truncate(text), source: "openlibrary" };
+  }
+  const gbText = cleanHtmlText(gb?.description ?? "");
+  if (usable(gbText)) return { text: truncate(gbText), source: "googlebooks" };
+  if (ol?.workKey) {
+    const text = await openLibraryDescription(ol.workKey);
+    if (usable(text)) return { text: truncate(text), source: "openlibrary" };
+  }
+  return null;
 }

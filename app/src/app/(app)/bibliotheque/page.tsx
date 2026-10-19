@@ -92,7 +92,7 @@ export default async function BibliothequePage({ searchParams }: PageProps<"/bib
             authors={distinctValues("author")}
             publishers={distinctValues("publisher")}
           />
-          {isEnriching() && <p className="mb-3 text-xs text-muted">Recherche des couvertures en cours…</p>}
+          {isEnriching() && <p className="mb-3 text-xs text-muted">Recherche des couvertures et des résumés en cours…</p>}
           <p className="mb-2 text-sm text-muted">
             {books.length} résultat{books.length > 1 ? "s" : ""}
           </p>

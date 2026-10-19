@@ -10,6 +10,7 @@ import type { BookCandidate } from "@/lib/book-meta";
 import {
   coverCandidatesAction,
   deleteBookAction,
+  findSummaryAction,
   quickUpdateAction,
   setCoverFromUrlAction,
   uploadCoverAction,
@@ -95,6 +96,55 @@ export function NotesEditor({ id, value }: { id: number; value: string }) {
         className="w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-base outline-none focus:border-accent"
       />
     </div>
+  );
+}
+
+const SUMMARY_SOURCES: Record<string, string> = { openlibrary: "Open Library", googlebooks: "Google Books" };
+
+// Résumé replié s'il est long ; sans résumé, bouton pour lancer la recherche
+export function SummaryBlock({ id, text, source }: { id: number; text: string; source: string }) {
+  const router = useRouter();
+  const [expanded, setExpanded] = useState(false);
+  const [state, setState] = useState<"idle" | "searching" | "notfound">("idle");
+  const long = text.length > 400;
+
+  if (!text) {
+    return (
+      <section>
+        <h2 className="mb-1 text-sm font-semibold">Résumé</h2>
+        {state === "notfound" ? (
+          <p className="text-sm text-muted">Aucun résumé trouvé. Tu peux en écrire un avec « Modifier ».</p>
+        ) : (
+          <button
+            className="text-sm font-medium text-accent disabled:text-muted"
+            disabled={state === "searching"}
+            onClick={async () => {
+              setState("searching");
+              const res = await findSummaryAction(id);
+              if (res.ok) router.refresh();
+              else setState("notfound");
+            }}
+          >
+            {state === "searching" ? "Recherche…" : "Chercher un résumé"}
+          </button>
+        )}
+      </section>
+    );
+  }
+
+  return (
+    <section>
+      <h2 className="mb-1 text-sm font-semibold">Résumé</h2>
+      <p className={`whitespace-pre-line text-sm text-muted ${long && !expanded ? "line-clamp-6" : ""}`}>{text}</p>
+      <div className="mt-1 flex items-center justify-between gap-2 text-xs">
+        {long ? (
+          <button className="font-medium text-accent" onClick={() => setExpanded(!expanded)}>
+            {expanded ? "Réduire" : "Lire la suite"}
+          </button>
+        ) : <span />}
+        {SUMMARY_SOURCES[source] && <span className="text-muted">Source : {SUMMARY_SOURCES[source]}</span>}
+      </div>
+    </section>
   );
 }
 

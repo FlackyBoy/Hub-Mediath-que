@@ -142,4 +142,9 @@ export const migrations: string[] = [
     progress   REAL NOT NULL DEFAULT 0,
     PRIMARY KEY (tmdb_id, media_type)
   );`,
+
+  // 7 : résumés récupérés automatiquement (source vide = saisi à la main ou importé)
+  `ALTER TABLE books ADD COLUMN summary_source TEXT NOT NULL DEFAULT '';
+  ALTER TABLE books ADD COLUMN summary_checked INTEGER NOT NULL DEFAULT 0;
+  UPDATE books SET summary_checked = 1 WHERE summary != '';`,
 ];

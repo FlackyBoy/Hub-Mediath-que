@@ -21,11 +21,16 @@ export type Book = {
   isbn: string;
   cover: CoverState;
   meta_source: string;
+  summary_source: "" | "openlibrary" | "googlebooks";
+  summary_checked: number;
   created_at: string;
   updated_at: string;
 };
 
-export type BookInput = Omit<Book, "id" | "cover" | "meta_source" | "created_at" | "updated_at">;
+export type BookInput = Omit<
+  Book,
+  "id" | "cover" | "meta_source" | "summary_source" | "summary_checked" | "created_at" | "updated_at"
+>;
 
 export type BookFilters = {
   q?: string;
@@ -110,7 +115,7 @@ export function createBook(input: BookInput, cover: CoverState = "pending"): num
   return Number(result.lastInsertRowid);
 }
 
-type Patch = Partial<BookInput & { cover: CoverState; meta_source: string }>;
+type Patch = Partial<BookInput & Pick<Book, "cover" | "meta_source" | "summary_source" | "summary_checked">>;
 
 export function updateBook(id: number, patch: Patch) {
   const keys = Object.keys(patch) as (keyof Patch)[];
@@ -173,6 +178,14 @@ export function distinctValues(column: "style" | "author" | "publisher"): string
 
 export function booksNeedingCover(): Book[] {
   return getDb().prepare("SELECT * FROM books WHERE cover = 'pending' ORDER BY id").all() as Book[];
+}
+
+// Livres sans résumé dont la recherche automatique n'a pas encore été tentée
+export function nextBookNeedingSummary(): number | null {
+  const row = getDb().prepare("SELECT id FROM books WHERE summary = '' AND summary_checked = 0 ORDER BY id LIMIT 1").get() as
+    | { id: number }
+    | undefined;
+  return row?.id ?? null;
 }
 
 export function coverStats(): Record<CoverState, number> {

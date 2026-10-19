@@ -1,5 +1,6 @@
 // Exécuté une fois au démarrage du serveur : surveillance des téléchargements,
-// synchronisation périodique de Plex et sauvegarde quotidienne.
+// synchronisation périodique de Plex, sauvegarde quotidienne et reprise de
+// l'enrichissement des livres (couvertures, résumés).
 export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
     const { startDownloadWatcher } = await import("./lib/downloads");
@@ -8,5 +9,7 @@ export async function register() {
     startPlexSchedule();
     const { startBackupSchedule } = await import("./lib/backup");
     startBackupSchedule();
+    const { startEnrichment } = await import("./lib/book-enrich");
+    startEnrichment();
   }
 }
