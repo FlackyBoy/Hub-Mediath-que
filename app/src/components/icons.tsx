@@ -65,6 +65,19 @@ export function BookIcon(props: IconProps) {
   );
 }
 
+export function DiceIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="3" y="3" width="18" height="18" rx="3" />
+      <circle cx="8" cy="8" r="1.2" fill="currentColor" />
+      <circle cx="16" cy="8" r="1.2" fill="currentColor" />
+      <circle cx="12" cy="12" r="1.2" fill="currentColor" />
+      <circle cx="8" cy="16" r="1.2" fill="currentColor" />
+      <circle cx="16" cy="16" r="1.2" fill="currentColor" />
+    </Svg>
+  );
+}
+
 export function ChatIcon(props: IconProps) {
   return (
     <Svg {...props}>

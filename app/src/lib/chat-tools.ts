@@ -1,10 +1,13 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
+import { bestMatch, isBggConfigured } from "./bgg";
 import { STATUS_LABELS, TYPE_LABELS } from "./book-labels";
 import { getBook, listBooks, type Book } from "./books";
 import { getDb } from "./db";
 import { diskUsage, getCategoryFolders, getScanInfo, getTypeBreakdown } from "./disk";
 import { KIND_LABELS } from "./files";
+import { durationLabel, GAME_STATUS_LABELS, playersLabel, weightLabel } from "./game-labels";
+import { getGame, listGames, type Game } from "./games";
 import { listTorrents } from "./rtorrent";
 import { MEDIA_LABELS, SCREEN_STATUS_LABELS } from "./screen-labels";
 import { listScreens, plexKeys, type Screen } from "./screens";
@@ -73,6 +76,21 @@ const schemas = {
     limit: z.number().int().min(1).max(60).optional(),
   }),
   tmdb_lookup: z.object({ query: z.string().min(1).max(200) }),
+  search_games: z.object({
+    query: z.string().max(200).optional(),
+    status: z.enum(["possede", "envie", "ancien"]).optional(),
+    players: z.number().int().min(1).max(20).optional(),
+    max_time: z.number().int().min(5).max(1000).optional(),
+    tag: z.string().max(100).optional(),
+    min_rating: z.number().int().min(0).max(10).optional(),
+    limit: z.number().int().min(1).max(100).optional(),
+  }),
+  get_game: z.object({ id: z.number().int().positive() }),
+  get_rated_games: z.object({
+    order: z.enum(["best", "worst"]).optional(),
+    limit: z.number().int().min(1).max(60).optional(),
+  }),
+  bgg_lookup: z.object({ query: z.string().min(1).max(200) }),
 };
 
 export type ToolName = keyof typeof schemas;
@@ -180,6 +198,45 @@ export const CHAT_TOOLS: Anthropic.Beta.BetaTool[] = [
     input_schema: obj({ query: { type: "string", description: "Titre à chercher" } }, ["query"]),
     eager_input_streaming: true,
   },
+  {
+    name: "search_games",
+    description:
+      "Jeux de société de l'utilisateur (onglet Jeux). Statuts : possede (dans sa ludothèque), envie (liste d'envies), ancien (vendu ou donné). " +
+      "players garde les jeux jouables à ce nombre de joueurs, max_time ceux qui durent au plus ce nombre de minutes, " +
+      "tag cherche dans les catégories et mécaniques (ex. coopératif, deck-building, placement d'ouvriers). Renvoie au plus `limit` jeux (30 par défaut).",
+    input_schema: obj({
+      query: { type: "string", description: "Nom, auteur ou éditeur (partiel)" },
+      status: { type: "string", enum: ["possede", "envie", "ancien"] },
+      players: { type: "integer", minimum: 1, maximum: 20 },
+      max_time: { type: "integer", minimum: 5, maximum: 1000, description: "Durée maximale en minutes" },
+      tag: { type: "string", description: "Catégorie ou mécanique (partielle)" },
+      min_rating: { type: "integer", minimum: 0, maximum: 10 },
+      limit: { type: "integer", minimum: 1, maximum: 100 },
+    }),
+    eager_input_streaming: true,
+  },
+  {
+    name: "get_game",
+    description: "Fiche complète d'un jeu de la liste : description, catégories, mécaniques, auteurs, avis de l'utilisateur, nombre de parties.",
+    input_schema: obj({ id: { type: "integer", description: "Identifiant renvoyé par search_games" } }, ["id"]),
+    eager_input_streaming: true,
+  },
+  {
+    name: "get_rated_games",
+    description:
+      "Jeux notés par l'utilisateur avec note, avis, parties jouées, mécaniques et complexité : la base pour cerner ses goûts ludiques. " +
+      "order=best (défaut) ou worst.",
+    input_schema: obj({ order: { type: "string", enum: ["best", "worst"] }, limit: { type: "integer", minimum: 1, maximum: 60 } }),
+    eager_input_streaming: true,
+  },
+  {
+    name: "bgg_lookup",
+    description:
+      "Cherche un jeu de société sur BoardGameGeek : joueurs, durée, âge, complexité, note et rang BGG, catégories et mécaniques (en anglais). " +
+      "À utiliser pour vérifier un jeu avant de le recommander.",
+    input_schema: obj({ query: { type: "string", description: "Nom du jeu" } }, ["query"]),
+    eager_input_streaming: true,
+  },
 ];
 
 export const TOOL_LABELS: Record<ToolName, string> = {
@@ -194,7 +251,26 @@ export const TOOL_LABELS: Record<ToolName, string> = {
   search_screens: "Recherche dans tes films et séries",
   get_rated_screens: "Analyse de tes notes de films",
   tmdb_lookup: "Recherche sur TMDB",
+  search_games: "Recherche dans tes jeux",
+  get_game: "Lecture d'une fiche jeu",
+  get_rated_games: "Analyse de tes notes de jeux",
+  bgg_lookup: "Recherche sur BoardGameGeek",
 };
+
+function briefGame(g: Game) {
+  return {
+    id: g.id,
+    nom: g.title,
+    statut: GAME_STATUS_LABELS[g.status],
+    note: g.rating,
+    parties: g.plays || undefined,
+    joueurs: playersLabel(g.min_players, g.max_players) ?? undefined,
+    ideal_a: g.best_players || undefined,
+    duree: durationLabel(g.min_time, g.max_time) ?? undefined,
+    complexite: weightLabel(g.weight) ?? undefined,
+    mecaniques: clip(g.mechanics, 200) || undefined,
+  };
+}
 
 function briefScreen(s: Screen, plex: Set<string>) {
   return {
@@ -363,6 +439,63 @@ async function run(name: ToolName, input: unknown): Promise<unknown> {
           plateformes_fr: detailed[i]?.providers.map((p) => p.name) ?? [],
           saisons: detailed[i]?.seasons ?? undefined,
         })),
+      };
+    }
+    case "search_games": {
+      const p = schemas.search_games.parse(input);
+      const games = listGames({ q: p.query, status: p.status, players: p.players, maxTime: p.max_time, tag: p.tag, minRating: p.min_rating });
+      const limit = p.limit ?? 30;
+      return { total: games.length, jeux: games.slice(0, limit).map(briefGame) };
+    }
+    case "get_game": {
+      const { id } = schemas.get_game.parse(input);
+      const g = getGame(id);
+      if (!g) throw new Error(`Aucun jeu avec l'id ${id}`);
+      return {
+        ...briefGame(g),
+        nom_bgg: g.bgg_name || undefined,
+        age_min: g.min_age ?? undefined,
+        note_bgg: g.bgg_rating ?? undefined,
+        categories: g.categories,
+        mecaniques: g.mechanics,
+        auteurs: g.designers,
+        editeur: g.publisher || undefined,
+        annee: g.year ?? undefined,
+        description: clip(g.description, 1500),
+        mon_avis: g.notes,
+        derniere_partie: g.last_played ?? undefined,
+      };
+    }
+    case "get_rated_games": {
+      const p = schemas.get_rated_games.parse(input);
+      const rated = listGames({ sort: "note" }).filter((g) => g.rating !== null);
+      const ordered = p.order === "worst" ? [...rated].reverse() : rated;
+      return {
+        total_notes: rated.length,
+        jeux: ordered.slice(0, p.limit ?? 30).map((g) => ({ ...briefGame(g), categories: clip(g.categories, 150), mon_avis: clip(g.notes, 400) || undefined })),
+      };
+    }
+    case "bgg_lookup": {
+      const { query } = schemas.bgg_lookup.parse(input);
+      if (!isBggConfigured()) throw new Error("BoardGameGeek n'est pas configuré");
+      const match = await bestMatch(query);
+      if (!match) return { resultat: "Aucun jeu trouvé sur BoardGameGeek" };
+      const g = match.game;
+      return {
+        nom: g.name,
+        annee: g.year,
+        joueurs: playersLabel(g.minPlayers, g.maxPlayers),
+        ideal_a: g.bestPlayers || undefined,
+        duree: durationLabel(g.minTime, g.maxTime),
+        age_min: g.minAge,
+        complexite: weightLabel(g.weight),
+        note_bgg: g.rating,
+        rang_bgg: g.rank,
+        categories: g.categories.join(", "),
+        mecaniques: g.mechanics.join(", "),
+        auteurs: g.designers.slice(0, 4).join(", "),
+        description: clip(g.description, 600),
+        correspondance_incertaine: match.confidence < 0.85 || undefined,
       };
     }
   }

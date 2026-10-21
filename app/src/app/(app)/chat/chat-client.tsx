@@ -11,6 +11,8 @@ import { Markdown } from "./markdown";
 const SUGGESTIONS = [
   "Que lire après Cormac McCarthy ?",
   "Qu'est-ce que je pourrais lire dans ma pile « À lire » ce mois-ci ?",
+  "À quel jeu jouer ce soir à 2, en moins d'une heure ?",
+  "Quel jeu de société acheter d'après ceux que j'aime ?",
   "Combien d'espace prennent mes séries ?",
   "Quels comics Batman ai-je déjà ?",
 ];

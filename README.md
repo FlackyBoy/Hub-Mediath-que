@@ -4,7 +4,8 @@ PWA auto-hébergée qui regroupe :
 
 1. **Médiathèque** : explorateur de fichiers, espace disque, recherche Prowlarr, envoi vers rTorrent, suivi et notifications.
 2. **Bibliothèque** : livres et BD, import du tracker Google Sheets, scan ISBN, métadonnées et résumés Open Library / Google Books.
-3. **Chatbot** (optionnel) : questions sur mes données via l'API Claude (tool use).
+3. **Jeux** : ludothèque de jeux de société, import Google Sheets, images et infos BoardGameGeek (traduites en français), notes, avis et parties jouées.
+4. **Chatbot** (optionnel) : questions sur mes données via l'API Claude (tool use), recommandations de livres, films et jeux.
 
 Usage limité à du contenu que j'ai le droit de télécharger.
 
@@ -123,4 +124,5 @@ Tailscale activé, ouvrir l'adresse dans **Safari**, se connecter, puis **Partag
 - [x] Étape 2b : recherche Prowlarr, choix du dossier, envoi vers rTorrent, suivi et notifications
 - [x] Étape 3 : bibliothèque (import CSV, couvertures Open Library, ajout par scan ISBN / recherche / saisie, notes et avis, filtres)
 - [x] Étape 5 : Écrans (films et séries TMDB, swipe, notes, synchro Plex)
+- [x] Étape 6 : Jeux (import CSV, fiches BoardGameGeek traduites, filtres joueurs / durée, parties, recommandations dans le chat)
 - [x] Étape 4 : chat (Claude Opus 5.5, outils en lecture seule sur la bibliothèque, le disque et rTorrent, recommandations)
