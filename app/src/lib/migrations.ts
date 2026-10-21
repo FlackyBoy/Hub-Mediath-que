@@ -181,4 +181,18 @@ export const migrations: string[] = [
     updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
   );
   CREATE INDEX games_status ON games(status);`,
+
+  // 9 : fichiers de livres trouvés sur le serveur (new = à proposer, linked = dans la bibliothèque, ignored = écarté)
+  `CREATE TABLE book_files (
+    rel      TEXT PRIMARY KEY,
+    title    TEXT NOT NULL,
+    author   TEXT NOT NULL DEFAULT '',
+    ext      TEXT NOT NULL,
+    size     INTEGER NOT NULL DEFAULT 0,
+    status   TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'linked', 'ignored')),
+    book_id  INTEGER REFERENCES books(id) ON DELETE SET NULL,
+    found_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX book_files_status ON book_files(status);
+  CREATE INDEX book_files_book ON book_files(book_id);`,
 ];

@@ -43,7 +43,7 @@ export default async function JeuxPage({ searchParams }: PageProps<"/jeux">) {
           <p className="text-sm text-muted">{counts.possede} dans la ludothèque · {counts.envie} envie{counts.envie > 1 ? "s" : ""}</p>
         </div>
         <div className="flex shrink-0 gap-2">
-          <Link href="/jeux/importer" className="rounded-xl border border-border px-3 py-2 text-sm font-medium">Importer</Link>
+          <Link href="/jeux/importer" className="rounded-xl border border-border px-3 py-2 text-sm font-medium">Synchro</Link>
           <Link href="/jeux/ajouter" className="rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-accent-foreground">+ Ajouter</Link>
         </div>
       </div>

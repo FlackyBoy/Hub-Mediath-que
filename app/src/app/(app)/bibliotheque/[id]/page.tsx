@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookCover } from "@/components/book-cover";
 import { TYPE_LABELS } from "@/lib/book-labels";
+import { fileOfBook } from "@/lib/book-files";
 import { getBook } from "@/lib/books";
 import { BookActions, NotesEditor, RatingPicker, StatusPicker, SummaryBlock } from "./book-controls";
 
@@ -22,6 +23,7 @@ export default async function BookPage({ params }: PageProps<"/bibliotheque/[id]
   const book = getBook(Number((await params).id));
   if (!book) notFound();
 
+  const file = fileOfBook(book.id);
   const facts = [
     TYPE_LABELS[book.type],
     book.style,
@@ -46,6 +48,11 @@ export default async function BookPage({ params }: PageProps<"/bibliotheque/[id]
           <h1 className="text-xl font-bold leading-tight">{book.title}</h1>
           <p className="mt-1 text-muted">{book.author || "Auteur inconnu"}</p>
           <p className="mt-2 text-xs text-muted">{facts.join(" · ")}</p>
+          {file && (
+            <Link href={`/fichiers/apercu?p=${encodeURIComponent(file)}`} className="mt-2 inline-block text-xs text-accent">
+              Fichier sur le serveur ({file.split(".").pop()?.toUpperCase()})
+            </Link>
+          )}
         </div>
       </div>
 

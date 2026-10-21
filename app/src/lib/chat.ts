@@ -40,8 +40,20 @@ Jeux de société (onglet « Jeux ») :
 - Pour recommander un jeu à acheter, appuie-toi sur les mécaniques, la complexité et les catégories des jeux préférés, vérifie chaque titre avec bgg_lookup, et ne propose pas un jeu déjà possédé ; mentionne les jeux de la liste d'envies qui correspondent.
 - Donne les noms des jeux en français quand ils existent, et traduis les mécaniques BGG (en anglais).
 - Lien vers une fiche de la liste : [Nom](/jeux/ID).
+- Recommandation d'achat : vérifie chaque jeu proposé avec web_search (Ludovox, Trictrac, Philibert, Play-in, Ludum) pour donner son titre tel qu'il est édité en France, un prix indicatif et un lien vers la boutique ou la fiche. Un jeu introuvable en français est signalé comme tel. Une ou deux recherches par jeu suffisent.
 
 Médiathèque : les tailles sont en Go. Si l'analyse du disque est ancienne ou absente, signale-le.`;
+
+// Recherche web (exécutée par l'API) limitée aux sites ludiques français :
+// noms des jeux en VF, avis, prix et disponibilité
+const WEB_SEARCH: Anthropic.Beta.BetaWebSearchTool20260209 = {
+  type: "web_search_20260209",
+  name: "web_search",
+  allowed_domains: ["ludovox.fr", "trictrac.net", "philibert.net", "play-in.com", "ludum.fr"],
+  user_location: { type: "approximate", country: "FR", timezone: "Europe/Paris" },
+  max_uses: 6,
+};
+const WEB_SEARCH_LABEL = "Recherche sur les sites de jeux";
 
 export type ChatEvent =
   | { type: "text"; delta: string }
@@ -127,7 +139,7 @@ export async function* runChat(
           output_config: { effort: EFFORT },
           cache_control: { type: "ephemeral" },
           system: SYSTEM,
-          tools: CHAT_TOOLS,
+          tools: [...CHAT_TOOLS, WEB_SEARCH],
           messages,
         },
         { signal },
@@ -139,6 +151,8 @@ export async function* runChat(
         } else if (event.type === "content_block_start" && event.content_block.type === "tool_use") {
           const label = TOOL_LABELS[event.content_block.name as ToolName] ?? event.content_block.name;
           yield { type: "tool", label };
+        } else if (event.type === "content_block_start" && event.content_block.type === "server_tool_use") {
+          yield { type: "tool", label: WEB_SEARCH_LABEL };
         }
       }
 
@@ -226,7 +240,9 @@ export function displayMessages(conversationId: number): DisplayMessage[] {
     }
     const blocks = Array.isArray(m.content) ? m.content : [];
     const text = blocks.map((b) => (b.type === "text" ? b.text : "")).join("");
-    const tools = blocks.flatMap((b) => (b.type === "tool_use" ? [TOOL_LABELS[b.name as ToolName] ?? b.name] : []));
+    const tools = blocks.flatMap((b) =>
+      b.type === "tool_use" ? [TOOL_LABELS[b.name as ToolName] ?? b.name] : b.type === "server_tool_use" ? [WEB_SEARCH_LABEL] : [],
+    );
     const last = out.at(-1);
     if (last?.role === "assistant") {
       last.text += (last.text && text ? "\n\n" : "") + text;

@@ -56,9 +56,9 @@ L'app tourne en `network_mode: host` pour joindre rTorrent et Plex, qui n'écout
 | Module | Sources |
 |---|---|
 | Médiathèque | Système de fichiers (`MEDIA_DIRS`), Prowlarr API, rTorrent XML-RPC sur SCGI, Plex API |
-| Bibliothèque | SQLite, import CSV, Open Library puis Google Books, `BarcodeDetector` / zxing |
+| Bibliothèque | SQLite, import CSV ou export CSV d'un Google Sheet partagé par lien, analyse des dossiers de livres numériques (toutes les 6 h), Open Library puis Google Books, `BarcodeDetector` / zxing |
 | Jeux | SQLite, import CSV, BoardGameGeek XML API2 (jeton `BGG_API_TOKEN`), traduction des fiches par l'API Claude |
-| Chatbot | API Claude, outils en lecture seule sur SQLite et le disque |
+| Chatbot | API Claude, outils en lecture seule sur SQLite et le disque, recherche web limitée aux sites ludiques français |
 
 ## Installation serveur
 
