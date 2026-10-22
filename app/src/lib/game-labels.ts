@@ -34,8 +34,9 @@ export function isGameStatus(v: unknown): v is GameStatus {
 
 export function playersLabel(min: number | null, max: number | null): string | null {
   if (!min && !max) return null;
-  if (!max || min === max) return `${min ?? max} joueur${(min ?? max)! > 1 ? "s" : ""}`;
+  if (!max) return `${min}+ joueurs`;
   if (!min) return `jusqu'à ${max} joueurs`;
+  if (min === max) return `${min} joueur${min > 1 ? "s" : ""}`;
   return `${min}-${max} joueurs`;
 }
 

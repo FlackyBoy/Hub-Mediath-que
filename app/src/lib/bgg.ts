@@ -203,16 +203,29 @@ function similarity(a: string, b: string): number {
 
 // Meilleure fiche BGG pour un titre saisi (souvent en français : les noms alternatifs comptent).
 // Parmi les correspondances, le jeu le plus noté l'emporte (évite les homonymes obscurs).
+// Variantes de recherche : « King of Tokyo (Monster Box) » → « King of Tokyo »,
+// « Splendor – Les Cités » → « Splendor » (en dernier recours)
+function searchVariants(title: string): string[] {
+  const noParens = title.replace(/\s*\([^)]*\)/g, "").trim();
+  const head = noParens.split(/\s+[–—-]\s+|\s*:\s+/)[0].trim();
+  return [...new Set([title, noParens, head].filter((v) => v.length >= 2))];
+}
+
 export async function bestMatch(title: string, year?: number | null): Promise<{ game: BggGame; confidence: number } | null> {
-  let hits = await searchGames(title, true);
-  if (!hits.length) hits = await searchGames(title);
+  let hits: Awaited<ReturnType<typeof searchGames>> = [];
+  for (const q of searchVariants(title)) {
+    hits = await searchGames(q, true);
+    if (!hits.length) hits = await searchGames(q);
+    if (hits.length) break;
+  }
   if (!hits.length) return null;
   const scored = hits.map((h) => ({ h, s: similarity(title, h.name) - (h.type === "boardgame" ? 0 : 0.15) }));
   const top = scored.sort((a, b) => b.s - a.s).slice(0, 8).map((x) => x.h.bggId);
   const games = await getGames(top);
   let best: { game: BggGame; confidence: number } | null = null;
   for (const game of games) {
-    let confidence = Math.max(...game.names.map((n) => similarity(title, n)), 0);
+    const clean = title.replace(/\s*\([^)]*\)/g, "");
+    let confidence = Math.max(...game.names.map((n) => Math.max(similarity(title, n), similarity(clean, n))), 0);
     if (game.type !== "boardgame") confidence -= 0.15;
     if (year && game.year && Math.abs(year - game.year) <= 1) confidence += 0.1;
     const better =

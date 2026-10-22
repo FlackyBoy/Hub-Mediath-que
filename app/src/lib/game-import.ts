@@ -25,6 +25,8 @@ const COLUMN_PATTERNS: [Field, RegExp][] = [
   ["publisher", /^(editeur|publisher)/],
 ];
 
+const SUMMARY_ROW = /^(nombre de jeux|nb de jeux|total|moyenne|duree moyenne|note moyenne|valeurs indicatives)|^\(|\.$/;
+
 function parseStatus(raw: string): GameStatus {
   const s = norm(raw);
   // Colonne « Possédé » en Oui / Non : « Non » = envie
@@ -80,7 +82,8 @@ export function importGamesCsv(text: string): GameImportResult {
     rows.slice(1).forEach((cells, index) => {
       const raw: Partial<Record<Field, string>> = {};
       mapping.forEach((field, i) => (raw[field] = (cells[i] ?? "").trim()));
-      if (!raw.title) return void result.skipped++;
+      // Lignes de synthèse en bas du tableau (« Nombre de jeux », « Durée moyenne… », note de bas de page)
+      if (!raw.title || SUMMARY_ROW.test(norm(raw.title))) return void result.skipped++;
       try {
         const [minP, maxP] = parseRange(raw.players_raw ?? "");
         const [minT, maxT] = parseTime(raw.time_raw ?? "");

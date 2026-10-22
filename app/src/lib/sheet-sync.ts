@@ -35,9 +35,18 @@ export function csvExportUrl(input: string): string {
   return `https://docs.google.com/spreadsheets/d/${id}/export?format=csv${gid ? `&gid=${gid}` : ""}`;
 }
 
+// Sheets déjà connus (modifiables dans l'app)
+const DEFAULT_URLS: Partial<Record<SheetTarget, string>> = {
+  games: "https://docs.google.com/spreadsheets/d/1SyP3vgKxSOCGMO21mkunbMbE0sb6UEBcUPsZwAsiCYw/edit",
+};
+
+function sheetUrl(target: SheetTarget): string | null {
+  return getSetting(`sheet.${target}.url`) ?? DEFAULT_URLS[target] ?? null;
+}
+
 export function sheetStatus(target: SheetTarget): SheetStatus {
   const last = getSetting(`sheet.${target}.last`);
-  return { url: getSetting(`sheet.${target}.url`), last: last ? JSON.parse(last) : null };
+  return { url: sheetUrl(target), last: last ? JSON.parse(last) : null };
 }
 
 export function setSheetUrl(target: SheetTarget, url: string) {
@@ -46,7 +55,7 @@ export function setSheetUrl(target: SheetTarget, url: string) {
 }
 
 export async function syncSheet(target: SheetTarget): Promise<ImportResult> {
-  const url = getSetting(`sheet.${target}.url`);
+  const url = sheetUrl(target);
   const at = new Date().toISOString().replace("T", " ").slice(0, 19); // format SQLite (formatRelative)
   try {
     if (!url) throw new Error("Aucun Sheet enregistré");
