@@ -68,9 +68,9 @@ export function BookFiles({ dirs, last, files }: { dirs: string[]; last: ScanRes
         <form onSubmit={saveDirs} className="space-y-2">
           <p className="text-muted">
             Dossiers où tu ranges tes livres numériques (epub, pdf, cbz…), un par ligne, depuis la racine de l&apos;explorateur. Exemple :
-            download/livres
+            download/livre
           </p>
-          <textarea value={dirsText} onChange={(e) => setDirsText(e.target.value)} rows={3} placeholder="download/livres"
+          <textarea value={dirsText} onChange={(e) => setDirsText(e.target.value)} rows={3} placeholder="download/livre"
             className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-base outline-none focus:border-accent" />
           <div className="flex gap-2">
             <button className={`${btn.primary} flex-1`} disabled={busy !== "" || !dirsText.trim()}>{busy ? "Analyse…" : "Enregistrer et analyser"}</button>

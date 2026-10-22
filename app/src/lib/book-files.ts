@@ -16,8 +16,9 @@ const MAX_DEPTH = 8;
 
 export type BookFile = { rel: string; title: string; author: string; ext: string; size: number; status: string; book_id: number | null; found_at: string };
 
+// Par défaut : download/livre, le dossier de livres du serveur
 export function bookDirs(): string[] {
-  return (getSetting("books.dirs") ?? "").split("\n").map((s) => s.trim()).filter(Boolean);
+  return (getSetting("books.dirs") ?? "download/livre").split("\n").map((s) => s.trim()).filter(Boolean);
 }
 
 // Dossiers relatifs à MEDIA_ROOT (ex. download/livres), un par ligne ; vérifiés avant enregistrement
