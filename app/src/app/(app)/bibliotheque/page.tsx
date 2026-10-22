@@ -4,6 +4,7 @@ import Link from "next/link";
 import { BookCover } from "@/components/book-cover";
 import { PageHeader } from "@/components/page-header";
 import { isEnriching } from "@/lib/book-enrich";
+import { countNewBookFiles } from "@/lib/book-files";
 import { SORT_LABELS, STATUS_LABELS, TYPE_LABELS, type BookSort } from "@/lib/book-labels";
 import { countBooks, distinctValues, listBooks, type Book } from "@/lib/books";
 import { BooksToolbar, type ToolbarParams } from "./books-toolbar";
@@ -50,6 +51,7 @@ export default async function BibliothequePage({ searchParams }: PageProps<"/bib
   };
 
   const total = countBooks();
+  const newFiles = countNewBookFiles();
   const books = listBooks({
     q: params.q,
     type: params.type,
@@ -67,13 +69,19 @@ export default async function BibliothequePage({ searchParams }: PageProps<"/bib
         <PageHeader title="Livres" subtitle={`${total} livre${total > 1 ? "s" : ""}`} />
         <div className="flex shrink-0 gap-2">
           <Link href="/bibliotheque/importer" className="rounded-xl border border-border px-3 py-2 text-sm font-medium">
-            Importer
+            Synchro
           </Link>
           <Link href="/bibliotheque/ajouter" className="rounded-xl bg-accent px-3 py-2 text-sm font-semibold text-accent-foreground">
             + Ajouter
           </Link>
         </div>
       </div>
+
+      {newFiles > 0 && (
+        <Link href="/bibliotheque/importer#fichiers" className="mb-3 block rounded-2xl border border-accent/40 bg-accent/10 px-4 py-3 text-sm font-medium text-accent">
+          {newFiles} nouveau{newFiles > 1 ? "x" : ""} livre{newFiles > 1 ? "s" : ""} trouvé{newFiles > 1 ? "s" : ""} sur le serveur →
+        </Link>
+      )}
 
       {total === 0 ? (
         <div className="rounded-2xl border border-border bg-surface p-6 text-center text-sm">

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookIcon, ChatIcon, DownloadIcon, GaugeIcon, TvIcon } from "./icons";
+import { BookIcon, ChatIcon, DiceIcon, DownloadIcon, GaugeIcon, TvIcon } from "./icons";
 
 // "match" : préfixes d'URL qui activent l'onglet (Réglages est accessible depuis le Tableau)
 const items = [
@@ -10,6 +10,7 @@ const items = [
   { href: "/mediatheque", label: "Médias", Icon: DownloadIcon, match: [] },
   { href: "/ecrans", label: "Écrans", Icon: TvIcon, match: [] },
   { href: "/bibliotheque", label: "Livres", Icon: BookIcon, match: [] },
+  { href: "/jeux", label: "Jeux", Icon: DiceIcon, match: [] },
   { href: "/chat", label: "Chat", Icon: ChatIcon, match: [] },
 ];
 

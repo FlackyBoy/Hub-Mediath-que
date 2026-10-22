@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { requireSession } from "@/lib/auth";
 import { enrichBook, enrichSummary, startEnrichment } from "@/lib/book-enrich";
+import { addBookFromFile, ignoreBookFile, scanBookFiles, setBookDirs, type ScanResult } from "@/lib/book-files";
 import { importBooksCsv, type ImportResult } from "@/lib/book-import";
 import { isStatus } from "@/lib/book-labels";
 import { lookupIsbn, searchCandidates, type BookCandidate } from "@/lib/book-meta";
@@ -138,4 +139,45 @@ export async function importCsvAction(form: FormData): Promise<ImportResult | { 
 export async function startEnrichmentAction() {
   await requireSession();
   startEnrichment();
+}
+
+// --- Livres numériques présents sur le serveur ---
+
+export async function saveBookDirsAction(input: string): Promise<{ dirs?: string[]; error?: string }> {
+  await requireSession();
+  try {
+    return { dirs: await setBookDirs(input) };
+  } catch (error) {
+    return { error: (error as Error).message };
+  }
+}
+
+export async function scanBookFilesAction(): Promise<ScanResult | { error: string }> {
+  await requireSession();
+  try {
+    return await scanBookFiles();
+  } catch (error) {
+    return { error: (error as Error).message };
+  }
+}
+
+export async function addBookFilesAction(items: { rel: string; title: string; author: string }[]): Promise<{ added: number; errors: string[] }> {
+  await requireSession();
+  const errors: string[] = [];
+  let added = 0;
+  for (const it of items.slice(0, 500)) {
+    try {
+      addBookFromFile(String(it.rel), String(it.title), String(it.author ?? ""));
+      added++;
+    } catch (error) {
+      errors.push(`${it.title || it.rel} : ${(error as Error).message}`);
+    }
+  }
+  if (added) startEnrichment();
+  return { added, errors };
+}
+
+export async function ignoreBookFilesAction(rels: string[]) {
+  await requireSession();
+  for (const rel of rels.slice(0, 500)) ignoreBookFile(String(rel));
 }

@@ -1,26 +1,36 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { enrichmentProgress } from "@/lib/book-enrich";
+import { bookDirs, lastScan, newBookFiles } from "@/lib/book-files";
+import { sheetStatus } from "@/lib/sheet-sync";
+import { SheetSync } from "@/components/sheet-sync";
+import { BookFiles } from "./book-files";
 import { CoverProgress, ImportForm } from "./import-form";
 
-export const metadata: Metadata = { title: "Importer des livres" };
+export const metadata: Metadata = { title: "Importer et synchroniser" };
 
 export default function ImporterPage() {
   const progress = enrichmentProgress();
+  const files = newBookFiles();
   return (
     <>
       <nav className="mb-3 text-sm">
         <Link href="/bibliotheque" className="text-accent">Livres</Link>
       </nav>
-      <h1 className="mb-2 text-2xl font-bold tracking-tight">Importer</h1>
-      <p className="mb-4 text-sm text-muted">
-        Dans Google Sheets : Fichier &gt; Télécharger &gt; Valeurs séparées par des virgules (.csv). Les colonnes sont reconnues par
-        leur titre (Nom du livre, Auteur, Appréciation, Lu / Non lu, Style, Résumé, Pourquoi j&apos;aimerais…). Un livre déjà présent
-        est mis à jour, pas dupliqué.
-      </p>
+      <h1 className="mb-4 text-2xl font-bold tracking-tight">Importer et synchroniser</h1>
       <div className="space-y-4">
-        <ImportForm />
+        <SheetSync target="books" status={sheetStatus("books")} noun={["livre", "livres"]} />
+        <BookFiles key={files.map((f) => f.rel).join("|")} dirs={bookDirs()} last={lastScan()} files={files} />
         <CoverProgress {...progress} />
+        <details className="rounded-2xl border border-border bg-surface p-4 text-sm">
+          <summary className="cursor-pointer font-semibold">Importer un fichier CSV</summary>
+          <p className="my-3 text-muted">
+            Dans Google Sheets : Fichier &gt; Télécharger &gt; Valeurs séparées par des virgules (.csv). Les colonnes sont reconnues par
+            leur titre (Nom du livre, Auteur, Appréciation, Lu / Non lu, Style, Résumé, Pourquoi j&apos;aimerais…). Un livre déjà présent
+            est mis à jour, pas dupliqué.
+          </p>
+          <ImportForm />
+        </details>
       </div>
     </>
   );

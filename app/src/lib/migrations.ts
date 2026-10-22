@@ -147,4 +147,52 @@ export const migrations: string[] = [
   `ALTER TABLE books ADD COLUMN summary_source TEXT NOT NULL DEFAULT '';
   ALTER TABLE books ADD COLUMN summary_checked INTEGER NOT NULL DEFAULT 0;
   UPDATE books SET summary_checked = 1 WHERE summary != '';`,
+
+  // 8 : jeux de société (fiches complétées par BoardGameGeek ; meta = état de la recherche BGG)
+  `CREATE TABLE games (
+    id          INTEGER PRIMARY KEY,
+    bgg_id      INTEGER UNIQUE,
+    title       TEXT NOT NULL,
+    bgg_name    TEXT NOT NULL DEFAULT '',
+    year        INTEGER,
+    image       TEXT,
+    thumbnail   TEXT,
+    min_players INTEGER,
+    max_players INTEGER,
+    best_players TEXT NOT NULL DEFAULT '',
+    min_time    INTEGER,
+    max_time    INTEGER,
+    min_age     INTEGER,
+    weight      REAL,
+    bgg_rating  REAL,
+    bgg_rank    INTEGER,
+    categories  TEXT NOT NULL DEFAULT '',
+    mechanics   TEXT NOT NULL DEFAULT '',
+    designers   TEXT NOT NULL DEFAULT '',
+    publisher   TEXT NOT NULL DEFAULT '',
+    description TEXT NOT NULL DEFAULT '',
+    status      TEXT NOT NULL DEFAULT 'possede' CHECK (status IN ('possede', 'envie', 'ancien')),
+    rating      INTEGER CHECK (rating BETWEEN 0 AND 10),
+    notes       TEXT NOT NULL DEFAULT '',
+    plays       INTEGER NOT NULL DEFAULT 0,
+    last_played TEXT,
+    meta        TEXT NOT NULL DEFAULT 'pending' CHECK (meta IN ('pending', 'ok', 'doubtful', 'missing')),
+    created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX games_status ON games(status);`,
+
+  // 9 : fichiers de livres trouvés sur le serveur (new = à proposer, linked = dans la bibliothèque, ignored = écarté)
+  `CREATE TABLE book_files (
+    rel      TEXT PRIMARY KEY,
+    title    TEXT NOT NULL,
+    author   TEXT NOT NULL DEFAULT '',
+    ext      TEXT NOT NULL,
+    size     INTEGER NOT NULL DEFAULT 0,
+    status   TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new', 'linked', 'ignored')),
+    book_id  INTEGER REFERENCES books(id) ON DELETE SET NULL,
+    found_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX book_files_status ON book_files(status);
+  CREATE INDEX book_files_book ON book_files(book_id);`,
 ];
