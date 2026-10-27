@@ -22,9 +22,20 @@ const TABS: { key: Category; label: string }[] = [
   { key: "autres", label: "Autres" },
 ];
 
-export function SearchResults({ results, defaults }: { results: ResultView[]; defaults: Record<Category, string> }) {
+export function SearchResults({
+  results,
+  defaults,
+  initialTab,
+}: {
+  results: ResultView[];
+  defaults: Record<Category, string>;
+  initialTab?: Category;
+}) {
   const counts = Object.fromEntries(TABS.map((t) => [t.key, results.filter((r) => r.category === t.key).length]));
-  const [tab, setTab] = useState<Category>(TABS.find((t) => counts[t.key] > 0)?.key ?? "films");
+  // Onglet demandé s'il a des résultats, sinon le premier qui en a
+  const [tab, setTab] = useState<Category>(
+    (initialTab && counts[initialTab] > 0 ? initialTab : TABS.find((t) => counts[t.key] > 0)?.key) ?? "films",
+  );
   const [chosen, setChosen] = useState<ResultView | null>(null);
   const [added, setAdded] = useState<Set<string>>(new Set());
   const [notice, setNotice] = useState<string | null>(null);

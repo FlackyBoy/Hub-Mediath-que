@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { DownloadIcon } from "@/components/icons";
+import { isProwlarrConfigured } from "@/lib/prowlarr";
 import { MEDIA_LABELS, posterUrl } from "@/lib/screen-labels";
 import { getScreen, inPlex } from "@/lib/screens";
 import { getDetails, isTmdbConfigured, type ScreenDetails } from "@/lib/tmdb";
@@ -22,6 +24,11 @@ export default async function ScreenPage({ params }: PageProps<"/ecrans/[id]">) 
     details?.seasons ? `${details.seasons} saison${details.seasons > 1 ? "s" : ""}` : null,
     s.tmdb_rating ? `TMDB ★ ${s.tmdb_rating.toLocaleString("fr-FR")}` : null,
   ].filter(Boolean);
+  // Recherche Prowlarr déjà remplie : film avec l'année (évite remakes et homonymes), série sans
+  const tab = s.media_type === "movie" ? "films" : "series";
+  const searchHref = (title: string) =>
+    `/mediatheque/recherche?${new URLSearchParams({ q: s.media_type === "movie" && s.year ? `${title} ${s.year}` : title, tab })}`;
+  const otherTitle = s.original_title && s.original_title !== s.title ? s.original_title : null;
 
   return (
     <>
@@ -43,6 +50,23 @@ export default async function ScreenPage({ params }: PageProps<"/ecrans/[id]">) 
           )}
         </div>
       </div>
+
+      {isProwlarrConfigured() && (
+        <div className="mb-5">
+          <Link
+            href={searchHref(s.title)}
+            className="flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-accent-foreground"
+          >
+            <DownloadIcon className="size-5" />
+            Télécharger
+          </Link>
+          {otherTitle && (
+            <Link href={searchHref(otherTitle)} className="mt-2 block text-center text-xs text-accent">
+              Chercher avec le titre original ({otherTitle})
+            </Link>
+          )}
+        </div>
+      )}
 
       <div className="space-y-5">
         <ScreenStatusPicker id={s.id} value={s.status} />

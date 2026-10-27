@@ -31,6 +31,8 @@ function toView(r: SearchResult): ResultView {
 export default async function RecherchePage({ searchParams }: PageProps<"/mediatheque/recherche">) {
   const params = await searchParams;
   const q = typeof params.q === "string" ? params.q.trim() : "";
+  // Onglet ouvert d'office (lien « Télécharger » d'une fiche Écrans)
+  const tab = (["films", "series", "autres"] as const).find((t) => t === params.tab);
   const configured = isProwlarrConfigured();
 
   let results: ResultView[] = [];
@@ -79,6 +81,7 @@ export default async function RecherchePage({ searchParams }: PageProps<"/mediat
             <SearchResults
               key={q}
               results={results}
+              initialTab={tab}
               defaults={{
                 films: getDefaultDest("films"),
                 series: getDefaultDest("series"),
