@@ -56,3 +56,20 @@ export type ScreenCard = {
   tmdbRating: number | null;
   voteCount: number;
 };
+
+// Lien vers une plateforme de streaming : TMDB ne donne pas de lien direct par plateforme, on
+// ouvre donc sa recherche sur le titre (l'app s'ouvre sur mobile). Plateforme inconnue : la
+// page « Où regarder » de TMDB (JustWatch), qui a les liens directs.
+const PROVIDER_SEARCH: [RegExp, string][] = [
+  [/netflix/i, "https://www.netflix.com/search?q="],
+  [/amazon|prime video/i, "https://www.primevideo.com/search?phrase="],
+  [/disney/i, "https://www.disneyplus.com/search?q="],
+  [/apple tv/i, "https://tv.apple.com/fr/search?term="],
+  [/crunchyroll/i, "https://www.crunchyroll.com/fr/search?q="],
+  [/youtube/i, "https://www.youtube.com/results?search_query="],
+];
+
+export function providerUrl(providerName: string, title: string, fallback: string | null): string | null {
+  const search = PROVIDER_SEARCH.find(([re]) => re.test(providerName))?.[1];
+  return search ? search + encodeURIComponent(title) : fallback;
+}

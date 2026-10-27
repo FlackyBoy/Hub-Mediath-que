@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DownloadIcon } from "@/components/icons";
 import { isProwlarrConfigured } from "@/lib/prowlarr";
-import { MEDIA_LABELS, posterUrl } from "@/lib/screen-labels";
+import { MEDIA_LABELS, posterUrl, providerUrl } from "@/lib/screen-labels";
 import { getScreen, inPlex } from "@/lib/screens";
 import { getDetails, isTmdbConfigured, type ScreenDetails } from "@/lib/tmdb";
 import { DeleteScreen, ScreenNotes, ScreenRatingPicker, ScreenStatusPicker } from "./screen-controls";
@@ -76,15 +76,28 @@ export default async function ScreenPage({ params }: PageProps<"/ecrans/[id]">) 
           <section>
             <h2 className="mb-2 text-sm font-semibold">Où regarder (abonnement)</h2>
             <div className="flex flex-wrap gap-2">
-              {details.providers.map((p) => (
-                <span key={p.id} className="flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs">
-                  {p.logoPath && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={`https://image.tmdb.org/t/p/w45${p.logoPath}`} alt="" className="size-4 rounded" />
-                  )}
-                  {p.name}
-                </span>
-              ))}
+              {details.providers.map((p) => {
+                const href = providerUrl(p.name, s.title, details.watchLink);
+                const body = (
+                  <>
+                    {p.logoPath && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={`https://image.tmdb.org/t/p/w45${p.logoPath}`} alt="" className="size-4 rounded" />
+                    )}
+                    {p.name}
+                  </>
+                );
+                const cls = "flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs";
+                return href ? (
+                  <a key={p.id} href={href} target="_blank" rel="noopener noreferrer" className={`${cls} text-accent`}>
+                    {body} ↗
+                  </a>
+                ) : (
+                  <span key={p.id} className={cls}>
+                    {body}
+                  </span>
+                );
+              })}
             </div>
             <p className="mt-1 text-[10px] text-muted">Données JustWatch via TMDB</p>
           </section>
